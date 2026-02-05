@@ -1,0 +1,7 @@
+{
+  "incident_id": "INC-004",
+  "title": "Disk Full on Orders Service Node",
+  "root_cause": "disk_full",
+  "affected_service": "orders-api",
+  "severity": "medium"
+}

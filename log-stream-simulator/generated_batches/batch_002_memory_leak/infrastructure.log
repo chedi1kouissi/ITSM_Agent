@@ -1,0 +1,3 @@
+2026-02-05T11:04:38Z kubelet Container inventory-api memory usage 96%
+2026-02-05T11:04:42Z kubelet Container inventory-api terminated reason=OOMKilled
+2026-02-05T11:04:58Z kubelet Pod inventory-api started
