@@ -1,0 +1,4 @@
+2026-02-05T10:01:43Z ALERT DatabaseLatencyHigh service=payment-db latency_ms=1400 threshold=800
+2026-02-05T10:03:55Z ALERT ErrorRateSpike service=payment-api error_rate=32% threshold=10%
+2026-02-05T10:04:20Z ALERT ServiceDown service=payment-api instances=0
+2026-02-05T10:07:07Z ALERT RecoveryDetected service=payment-api error_rate=2%

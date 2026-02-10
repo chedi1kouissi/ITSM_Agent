@@ -1,0 +1,4 @@
+2026-02-05T10:04:35Z kubelet Pod payment-api-7f8c9 memory usage high 92%
+2026-02-05T10:04:37Z kubelet Container payment-api restarted exit_code=137
+2026-02-05T10:04:50Z kubelet Liveness probe failed for payment-api
+

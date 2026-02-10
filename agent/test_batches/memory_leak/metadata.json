@@ -1,0 +1,7 @@
+{
+  "incident_id": "INC-002",
+  "title": "Inventory Service Memory Leak",
+  "root_cause": "memory_leak",
+  "affected_service": "inventory-api",
+  "severity": "high"
+}

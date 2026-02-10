@@ -1,0 +1,5 @@
+2026-02-05T13:00:00Z INFO orders-api Order created status=201
+2026-02-05T13:02:09Z WARN orders-api Write latency increased
+2026-02-05T13:03:39Z ERROR orders-api Failed to write file error=no_space_left
+2026-02-05T13:04:11Z ERROR orders-api Unable to persist order storage failure
+

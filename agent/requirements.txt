@@ -1,0 +1,19 @@
+flask
+flask-cors
+google-generativeai
+pydantic
+google-generativeai
+dotenv
+langchain
+langchain-core
+langchain-community
+langgraph
+langgraph-checkpoint
+mcp
+python-dateutil
+pytz
+regex
+langchain-google-genai    # Gemini API integration
+langgraph                 # The ReAct framework
+pydantic                  # Data validation/Schema
+python-dotenv             # Environment variable management

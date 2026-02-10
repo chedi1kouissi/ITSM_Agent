@@ -1,0 +1,14 @@
+2026-02-05T11:00:00Z INFO inventory-api Request completed status=200 latency=21ms
+2026-02-05T11:00:00Z INFO inventory-api Request completed status=200 latency=31ms
+2026-02-05T11:00:00Z INFO inventory-api Request completed status=200 latency=29ms
+2026-02-05T11:00:00Z INFO inventory-api Request completed status=200 latency=22ms
+2026-02-05T11:00:00Z INFO inventory-api Request completed status=200 latency=23ms
+2026-02-05T11:00:00Z INFO inventory-api Request completed status=200 latency=32ms
+2026-02-05T11:00:00Z INFO inventory-api Request completed status=200 latency=35ms
+2026-02-05T11:00:00Z INFO inventory-api Request completed status=200 latency=29ms
+2026-02-05T11:00:00Z INFO inventory-api Request completed status=200 latency=46ms
+2026-02-05T11:00:00Z INFO inventory-api Request completed status=200 latency=32ms
+2026-02-05T11:02:10Z WARN inventory-api Cache size growing unexpectedly size_mb=850
+2026-02-05T11:03:18Z WARN inventory-api High memory usage detected usage_mb=1500
+2026-02-05T11:04:43Z ERROR inventory-api OutOfMemoryError allocation failed
+

@@ -1,0 +1,3 @@
+2026-02-05T12:02:30Z ALERT ExternalDependencyLatency service=payment-provider latency=3200ms
+2026-02-05T12:03:35Z ALERT ErrorRateSpike service=payment-api error_rate=28%
+

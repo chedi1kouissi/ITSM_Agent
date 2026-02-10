@@ -1,0 +1,27 @@
+2026-02-05T10:00:03Z INFO payment-api Request completed status=200 latency=39ms
+2026-02-05T10:00:05Z INFO payment-api Request completed status=200 latency=38ms
+2026-02-05T10:00:09Z INFO payment-api Request completed status=200 latency=36ms
+2026-02-05T10:00:13Z INFO payment-api Request completed status=200 latency=36ms
+2026-02-05T10:00:18Z INFO payment-api Request completed status=200 latency=33ms
+2026-02-05T10:00:23Z INFO payment-api Request completed status=200 latency=35ms
+2026-02-05T10:00:25Z INFO payment-api Request completed status=200 latency=29ms
+2026-02-05T10:00:28Z INFO payment-api Request completed status=200 latency=45ms
+2026-02-05T10:00:33Z INFO payment-api Request completed status=200 latency=37ms
+2026-02-05T10:00:35Z INFO payment-api Request completed status=200 latency=32ms
+2026-02-05T10:00:39Z INFO payment-api Request completed status=200 latency=34ms
+2026-02-05T10:00:45Z INFO payment-api Request completed status=200 latency=36ms
+2026-02-05T10:00:51Z INFO payment-api Request completed status=200 latency=33ms
+2026-02-05T10:00:54Z INFO payment-api Request completed status=200 latency=35ms
+2026-02-05T10:01:00Z INFO payment-api Request completed status=200 latency=30ms
+2026-02-05T10:01:04Z INFO payment-api Request completed status=200 latency=29ms
+2026-02-05T10:01:06Z INFO payment-api Request completed status=200 latency=39ms
+2026-02-05T10:01:12Z INFO payment-api Request completed status=200 latency=41ms
+2026-02-05T10:01:15Z INFO payment-api Request completed status=200 latency=41ms
+2026-02-05T10:01:18Z INFO payment-api Request completed status=200 latency=32ms
+2026-02-05T10:01:18Z WARN payment-api Slow database query latency=1200ms request_id=req_101
+2026-02-05T10:01:45Z WARN payment-api Slow database query latency=1850ms request_id=req_104
+2026-02-05T10:04:00Z ERROR payment-api Database timeout request_id=req_210 latency=5200ms
+2026-02-05T10:04:02Z ERROR payment-api Failed to process payment error=db_timeout
+2026-02-05T10:04:30Z ERROR payment-api Unhandled exception ConnectionPoolExhausted
+2026-02-05T10:04:52Z ERROR payment-api Service unavailable returning 503
+
