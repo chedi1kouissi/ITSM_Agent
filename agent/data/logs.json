@@ -1,5 +1,6 @@
 {
   "app_id": "01",
+  "incident_id": "INC-2026-0002",
   "app_logs": "2026-02-05T10:00:03Z INFO payment-api Request completed status=200 latency=39ms\n2026-02-05T10:00:18Z WARN payment-api Slow database query latency=1200ms request_id=req_101\n2026-02-05T10:04:00Z ERROR payment-api Database timeout request_id=req_210 latency=5200ms\n2026-02-05T10:04:30Z ERROR payment-api Unhandled exception ConnectionPoolExhausted\n2026-02-05T10:04:52Z ERROR payment-api Service unavailable returning 503",
   "database_logs": "2026-02-05T10:01:18Z DB WARNING Slow query execution_time=3.2s query=\"SELECT * FROM payments\"\n2026-02-05T10:03:45Z DB WARNING Connection usage high active_connections=145 max=150\n2026-02-05T10:03:58Z DB ERROR Connection pool exhausted active_connections=150 max=150\n2026-02-05T10:03:59Z DB ERROR Query timeout execution_time=7.8s",
   "infrastructure_logs": "2026-02-05T10:04:35Z kubelet Pod payment-api-7f8c9 memory usage high 92%\n2026-02-05T10:04:37Z kubelet Container payment-api restarted exit_code=137\n2026-02-05T10:04:50Z kubelet Liveness probe failed for payment-api",

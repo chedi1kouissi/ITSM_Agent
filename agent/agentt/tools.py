@@ -1,26 +1,64 @@
 import json
 import os
 from langchain_core.tools import tool
-
-from .state import AgentState
-
-# Path where the final tickets are saved
-DB_FILE = "data/incidents_db.json"
+from .database import get_db_connection
 
 @tool
-def save_relevant_evidence(evidence_items: list[dict]):
+def create_incident_with_evidence(incident_id: str, evidence_items: list[dict], initial_summary: str = ""):
     """
-    Saves specific log lines that serve as evidence for the root cause.
+    Creates a new incident and saves evidence in a single transaction.
     
     Args:
+        incident_id: The ID for the new incident (e.g., "INC-2026-0001").
         evidence_items: List of dicts. Each dict MUST have:
                         - "log_line": The exact text of the log.
                         - "source": "app", "db", "infra", or "monitoring".
                         - "reasoning": Why this line is important (e.g. "Shows DB timeout").
+                        - "timestamp": The timestamp from the log line.
+        initial_summary: Optional brief description of the incident.
     """
-    # In a real app, this would push to the state. 
-    # Here, we return a success message so the LLM knows it "worked".
-    return f"Successfully saved {len(evidence_items)} evidence items."
+    conn = get_db_connection()
+    if not conn:
+        return "Error: Could not connect to database."
+
+    try:
+        cur = conn.cursor()
+        
+        # 1. Create the incident first
+        cur.execute("""
+            INSERT INTO incidents (incident_id, status, agent_notes)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (incident_id) DO NOTHING
+        """, (
+            incident_id,
+            "ANALYZING",
+            initial_summary or "Incident created - analyzing evidence"
+        ))
+        
+        # 2. Save all evidence items
+        saved_count = 0
+        for item in evidence_items:
+            cur.execute("""
+                INSERT INTO evidence (incident_id, log_line, source, timestamp, reasoning)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (
+                incident_id,
+                item.get("log_line"),
+                item.get("source"),
+                item.get("timestamp"),
+                item.get("reasoning")
+            ))
+            saved_count += 1
+            
+        conn.commit()
+        return f"Successfully created incident {incident_id} and saved {saved_count} evidence items."
+        
+    except Exception as e:
+        conn.rollback()
+        return f"Error creating incident with evidence: {str(e)}"
+    finally:
+        cur.close()
+        conn.close()
 
 @tool
 def calculate_risk_score(plan_text: str) -> int:
@@ -30,7 +68,7 @@ def calculate_risk_score(plan_text: str) -> int:
     risk_score = 0
     plan_lower = plan_text.lower()
     
-    # Risk Logic
+    # Risk Logic (Simple Heuristic)
     high_risk = ["kill", "drop", "truncate", "restart service", "global config", "delete"]
     medium_risk = ["scale", "clear cache", "index", "restart pod", "rollback"]
     
@@ -45,42 +83,57 @@ def calculate_risk_score(plan_text: str) -> int:
     return min(risk_score, 100)
 
 @tool
-def create_itsm_ticket(incident_id: str, recovery_plan: str, risk_score: int, evidence_list: list[dict], internal_monologue: str):
+def finalize_itsm_ticket(incident_id: str, recovery_plan: str, risk_score: int, agent_notes: str):
     """
-    Finalizes the process by saving the ticket to the database.
+    Finalizes the incident by updating it with recovery plan and risk score.
     
     Args:
-        incident_id: The ID for the ticket.
+        incident_id: The ID for the ticket (must already exist from create_incident_with_evidence).
         recovery_plan: The full text of the proposed fix.
         risk_score: The score calculated by the risk tool.
-        evidence_list: The list of evidence items found during analysis.
-        internal_monologue: A brief summary of the agent's reasoning.
+        agent_notes: The "Internal Monologue" or summary of the agent's reasoning.
     """
-    ticket_data = {
-        "incident_id": incident_id,
-        "status": "OPEN",
-        "risk_score": risk_score,
-        "recovery_plan": recovery_plan,
-        "evidence": evidence_list,  # Use the data passed by the LLM
-        "agent_notes": internal_monologue,
-        "requires_human_approval": risk_score > 30,
-        "created_at": "2026-02-05T10:08:00Z" # You can use datetime.now() here
-    }
-    
-    os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
-    
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, 'r') as f:
-            try:
-                db_data = json.load(f)
-            except json.JSONDecodeError:
-                db_data = []
-    else:
-        db_data = []
+    conn = get_db_connection()
+    if not conn:
+        return "Error: Could not connect to database."
         
-    db_data.append(ticket_data)
-    
-    with open(DB_FILE, 'w') as f:
-        json.dump(db_data, f, indent=2)
+    try:
+        cur = conn.cursor()
         
-    return f"Ticket {incident_id} saved successfully."
+        # 1. Update the incident with recovery plan
+        cur.execute("""
+            UPDATE incidents 
+            SET status = %s,
+                risk_score = %s,
+                recovery_plan = %s,
+                agent_notes = %s
+            WHERE incident_id = %s
+        """, (
+            "OPEN",
+            risk_score,
+            recovery_plan,
+            agent_notes,
+            incident_id
+        ))
+        
+        # 2. Save recovery step
+        cur.execute("""
+            INSERT INTO recovery_steps (incident_id, step_order, step_description, risk_level, status)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            incident_id,
+            1,
+            recovery_plan,
+            "HIGH" if risk_score > 60 else ("MEDIUM" if risk_score > 30 else "LOW"),
+            "PENDING"
+        ))
+        
+        conn.commit()
+        return f"Ticket {incident_id} finalized successfully with risk score {risk_score}."
+        
+    except Exception as e:
+        conn.rollback()
+        return f"Error finalizing ticket: {str(e)}"
+    finally:
+        cur.close()
+        conn.close()

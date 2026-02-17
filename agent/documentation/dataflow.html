@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ITSM Agent — Live Scenario Walkthrough</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060910;
+  --surface: #0b1019;
+  --surface2: #111927;
+  --border: #1c2a3e;
+  --border2: #243347;
+  --cyan: #00d9f5;
+  --green: #39ff8a;
+  --amber: #f5a623;
+  --red: #ff4757;
+  --purple: #a855f7;
+  --blue: #3b82f6;
+  --text: #b8ccdf;
+  --muted: #3d5269;
+  --white: #e8f1f9;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* scanline overlay */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+  pointer-events: none; z-index: 9999;
+}
+
+/* ── TOP BAR ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(6,9,16,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px;
+  display: flex; align-items: center; gap: 0;
+}
+.tab-btn {
+  padding: 16px 24px;
+  background: none; border: none; cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  position: relative;
+}
+.tab-btn.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.tab-btn:hover:not(.active) { color: var(--text); }
+.tab-num {
+  display: inline-block;
+  width: 18px; height: 18px; line-height: 18px;
+  border-radius: 50%; text-align: center;
+  font-size: 9px; font-weight: 700;
+  margin-right: 8px;
+  background: var(--border2); color: var(--muted);
+  transition: all 0.2s;
+}
+.tab-btn.active .tab-num { background: var(--cyan); color: #000; }
+
+.topbar-title {
+  margin-left: auto;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem; letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.topbar-title span { color: var(--cyan); }
+
+/* ── PANELS ── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── HERO ── */
+.hero {
+  padding: 60px 40px 40px;
+  border-bottom: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: 'INCIDENT';
+  position: absolute; right: -20px; top: 50%; transform: translateY(-50%);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 12rem; color: rgba(255,255,255,0.02);
+  letter-spacing: -0.05em; pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 4px 12px; border-radius: 20px;
+  background: rgba(255,71,87,0.12); border: 1px solid rgba(255,71,87,0.3);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.15em;
+  color: var(--red); text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.hero-badge::before {
+  content: '';
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--red);
+  animation: blink 1s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3.5rem; color: var(--white);
+  letter-spacing: 0.05em; line-height: 1;
+  margin-bottom: 8px;
+}
+.hero h1 em { color: var(--cyan); font-style: normal; }
+.hero p { color: var(--muted); font-size: 13px; max-width: 600px; }
+
+/* ── TIMELINE PANEL ── */
+.timeline-wrap { padding: 40px; }
+
+.tl-grid {
+  display: grid;
+  grid-template-columns: 120px 40px 1fr;
+  gap: 0;
+  position: relative;
+}
+
+/* vertical line */
+.tl-line-col {
+  grid-column: 2;
+  position: relative;
+}
+.tl-line-col::before {
+  content: '';
+  position: absolute; left: 50%; top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--border2) 0%, var(--cyan) 30%, var(--amber) 60%, var(--red) 100%);
+  transform: translateX(-50%);
+}
+
+.tl-entry {
+  display: contents;
+}
+
+.tl-time {
+  padding: 0 16px 36px 0;
+  text-align: right;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--muted);
+  padding-top: 4px;
+}
+
+.tl-dot-wrap {
+  display: flex; justify-content: center;
+  padding-bottom: 36px; padding-top: 2px;
+  position: relative; z-index: 2;
+}
+.tl-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--bg);
+  flex-shrink: 0;
+  position: relative; z-index: 2;
+}
+
+.tl-content {
+  padding: 0 0 36px 20px;
+}
+
+.tl-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  position: relative;
+  overflow: hidden;
+  opacity: 0; transform: translateX(20px);
+  animation: slideIn 0.4s ease forwards;
+}
+.tl-card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--card-color, var(--cyan));
+}
+
+@keyframes slideIn { to { opacity:1; transform:translateX(0); } }
+
+.tl-card-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.tl-source-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  background: rgba(255,255,255,0.05);
+}
+.tl-card-title {
+  font-weight: 600; font-size: 13px; color: var(--white);
+}
+.tl-log-line {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--muted);
+  background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 6px;
+  margin-bottom: 10px; word-break: break-all; line-height: 1.5;
+}
+.tl-log-line span.highlight { color: var(--amber); font-weight: 700; }
+.tl-log-line span.err { color: var(--red); font-weight: 700; }
+.tl-log-line span.ok { color: var(--green); font-weight: 700; }
+
+.tl-think {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: rgba(168,85,247,0.06);
+  border: 1px solid rgba(168,85,247,0.2);
+  border-radius: 8px; padding: 10px 14px;
+  margin-top: 10px;
+}
+.think-icon { font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+.think-text {
+  font-size: 12px; color: #b89de8; font-style: italic; line-height: 1.6;
+}
+.think-text strong { color: var(--purple); font-style: normal; font-weight: 700; }
+
+.tl-db-write {
+  margin-top: 10px;
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.db-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.08em;
+  border: 1px solid;
+}
+.db-tag.write { color: var(--green); border-color: rgba(57,255,138,0.3); background: rgba(57,255,138,0.06); }
+.db-tag.read  { color: var(--blue);  border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.06); }
+.db-tag.update{ color: var(--amber); border-color: rgba(245,166,35,0.3);  background: rgba(245,166,35,0.06); }
+.db-tag::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+/* ── AGENT THINKING PANEL ── */
+.react-wrap { padding: 40px; }
+
+.react-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.8rem; letter-spacing: 0.1em;
+  color: var(--white); margin-bottom: 6px;
+}
+.react-sub { color: var(--muted); font-size: 12px; margin-bottom: 32px; }
+
+.loop {
+  display: grid; grid-template-columns: 1fr; gap: 2px;
+  border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  margin-bottom: 28px;
+}
+.loop-header {
+  background: var(--surface2);
+  padding: 12px 20px;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.loop-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem; color: var(--cyan); line-height: 1;
+  min-width: 30px;
+}
+.loop-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--muted);
+}
+.loop-label span { color: var(--white); }
+
+.loop-body { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+
+.step-block {
+  padding: 20px 24px;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+.step-block:last-child { border-right: none; }
+
+.step-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.step-label.thought { color: var(--purple); }
+.step-label.action  { color: var(--cyan); }
+.step-label.obs     { color: var(--green); }
+
+.step-content {
+  font-size: 12px; line-height: 1.65; color: var(--text);
+}
+.step-content code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--cyan);
+  background: rgba(0,217,245,0.08); padding: 1px 5px; border-radius: 3px;
+}
+.step-content .tool-call {
+  display: block; margin-top: 10px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border2);
+  border-radius: 8px; padding: 10px 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--cyan); line-height: 1.7;
+}
+.step-content .tool-call .fn { color: var(--amber); font-weight: 700; }
+.step-content .tool-call .param { color: var(--text); }
+.step-content .tool-call .val { color: var(--green); }
+.obs-box {
+  background: rgba(57,255,138,0.05);
+  border: 1px solid rgba(57,255,138,0.15);
+  border-radius: 8px; padding: 10px 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--green); line-height: 1.7;
+  margin-top: 10px;
+}
+.obs-box.db-write {
+  background: rgba(0,217,245,0.04);
+  border-color: rgba(0,217,245,0.15); color: var(--cyan);
+}
+
+/* ── DB FLOW PANEL ── */
+.db-wrap { padding: 40px; }
+
+.db-section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.5rem; letter-spacing: 0.1em;
+  color: var(--white); margin-bottom: 4px;
+}
+.db-section-sub { color: var(--muted); font-size: 12px; margin-bottom: 28px; }
+
+.db-op-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  margin-bottom: 40px;
+}
+
+.db-op-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+.db-op-header {
+  padding: 14px 20px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.db-op-icon { font-size: 1.1rem; }
+.db-op-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: var(--white); }
+.db-op-table { font-size: 10px; color: var(--muted); margin-left: auto; }
+.db-op-body { padding: 16px 20px; }
+
+.sql-block {
+  background: #020407;
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; line-height: 1.8;
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+.sql-kw { color: var(--cyan); font-weight: 700; }
+.sql-table { color: var(--amber); }
+.sql-val { color: var(--green); }
+.sql-comment { color: var(--muted); font-style: italic; }
+.sql-str { color: #ff9f7f; }
+
+.db-op-note {
+  font-size: 11px; color: var(--muted); line-height: 1.6;
+  padding: 8px 12px;
+  border-left: 2px solid var(--border2);
+}
+.db-op-note strong { color: var(--text); font-weight: 600; }
+
+/* ── SUMMARY PANEL ── */
+.summary-wrap { padding: 40px; }
+
+.sum-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+.sum-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px;
+  position: relative; overflow: hidden;
+}
+.sum-card::after {
+  content: '';
+  position: absolute; bottom: -20px; right: -20px;
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--card-glow, rgba(0,217,245,0.05));
+}
+.sum-icon { font-size: 1.8rem; margin-bottom: 12px; }
+.sum-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.8rem; color: var(--white); line-height: 1;
+  margin-bottom: 4px;
+}
+.sum-val span { font-size: 1.4rem; color: var(--muted); }
+.sum-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.sum-sub { font-size: 11px; color: var(--text); margin-top: 8px; line-height: 1.5; }
+
+.causal-chain {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 32px;
+  margin-bottom: 28px;
+  position: relative; overflow: hidden;
+}
+.causal-chain::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--amber), var(--red));
+}
+.chain-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; font-weight: 700; color: var(--amber);
+  letter-spacing: 0.2em; text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.chain-nodes {
+  display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+}
+.chain-node {
+  flex-shrink: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px; padding: 10px 16px;
+  font-size: 12px; font-weight: 600; color: var(--white);
+  position: relative;
+}
+.chain-node .node-time {
+  display: block; font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; color: var(--muted); margin-bottom: 4px;
+}
+.chain-node .node-label { color: var(--amber); font-size: 10px; display: block; margin-top: 2px; }
+.chain-arrow {
+  padding: 0 8px; color: var(--red); font-size: 1.2rem; flex-shrink: 0;
+}
+
+/* animations */
+.tl-card:nth-child(1)  { animation-delay: 0.05s; }
+.tl-card:nth-child(2)  { animation-delay: 0.10s; }
+.tl-card:nth-child(3)  { animation-delay: 0.15s; }
+.tl-card:nth-child(4)  { animation-delay: 0.20s; }
+.tl-card:nth-child(5)  { animation-delay: 0.25s; }
+.tl-card:nth-child(6)  { animation-delay: 0.30s; }
+.tl-card:nth-child(7)  { animation-delay: 0.35s; }
+.tl-card:nth-child(8)  { animation-delay: 0.40s; }
+.tl-card:nth-child(9)  { animation-delay: 0.45s; }
+.tl-card:nth-child(10) { animation-delay: 0.50s; }
+.tl-card:nth-child(11) { animation-delay: 0.55s; }
+
+.loop { opacity: 0; animation: fadeUp 0.5s ease forwards; }
+.loop:nth-child(1){ animation-delay: 0.1s; }
+.loop:nth-child(2){ animation-delay: 0.2s; }
+.loop:nth-child(3){ animation-delay: 0.3s; }
+.loop:nth-child(4){ animation-delay: 0.4s; }
+.loop:nth-child(5){ animation-delay: 0.5s; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+.db-op-card { opacity: 0; animation: fadeUp 0.5s ease forwards; }
+.db-op-card:nth-child(1){ animation-delay: 0.05s; }
+.db-op-card:nth-child(2){ animation-delay: 0.10s; }
+.db-op-card:nth-child(3){ animation-delay: 0.15s; }
+.db-op-card:nth-child(4){ animation-delay: 0.20s; }
+.db-op-card:nth-child(5){ animation-delay: 0.25s; }
+.db-op-card:nth-child(6){ animation-delay: 0.30s; }
+
+.risk-bar-wrap {
+  margin-top: 16px;
+  background: var(--border); border-radius: 100px; height: 8px; overflow: hidden;
+}
+.risk-bar {
+  height: 100%; border-radius: 100px;
+  background: linear-gradient(90deg, var(--amber), var(--red));
+  width: 0; animation: growBar 1s 0.5s ease forwards;
+}
+@keyframes growBar { to { width: 40%; } }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="topbar">
+  <button class="tab-btn active" onclick="showPanel('timeline', this)">
+    <span class="tab-num">1</span>Event Timeline
+  </button>
+  <button class="tab-btn" onclick="showPanel('react', this)">
+    <span class="tab-num">2</span>Agent Thinking
+  </button>
+  <button class="tab-btn" onclick="showPanel('db', this)">
+    <span class="tab-num">3</span>DB Operations
+  </button>
+  <button class="tab-btn" onclick="showPanel('summary', this)">
+    <span class="tab-num">4</span>Final Ticket
+  </button>
+  <div class="topbar-title">ITSM <span>ReAct</span> Agent</div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Live Incident · app_id: 01</div>
+  <h1>payment-api <em>outage</em></h1>
+  <p>Full walkthrough of logs → agent reasoning → tool calls → PostgreSQL writes — from the first slow query at 10:00 to service recovery at 10:07.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PANEL 1: EVENT TIMELINE
+════════════════════════════════════════════ -->
+<div id="panel-timeline" class="panel active">
+<div class="timeline-wrap">
+
+  <div class="tl-grid">
+
+    <!-- ENTRY 1 -->
+    <div class="tl-time">10:00:03</div>
+    <div class="tl-dot-wrap"><div class="tl-dot" style="background:#39ff8a"></div></div>
+    <div class="tl-content">
+      <div class="tl-card" style="--card-color:#39ff8a;">
+        <div class="tl-card-header">
+          <span class="tl-source-tag" style="color:#39ff8a">APP</span>
+          <span class="tl-card-title">System healthy — baseline</span>
+        </div>
+        <div class="tl-log-line">INFO payment-api Request completed status=<span class="ok">200</span> latency=<span class="ok">39ms</span></div>
+        <div class="tl-think">
+          <span class="think-icon">💭</span>
+          <span class="think-text"><strong>Agent notes:</strong> Latency is 39ms — well under the <code>max_latency_ms</code> threshold stored in the <code>services</code> table (threshold: 800ms). Nothing to flag yet. This becomes the <em>baseline</em> for comparison.</span>
+        </div>
+        <div class="tl-db-write">
+          <span class="db-tag read">READ services — get SLO thresholds</span>
+          <span class="db-tag write">WRITE raw_logs — archive log batch</span>
+          <span class="db-tag write">WRITE incidents — status: ANALYZING</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 2 -->
+    <div class="tl-time">10:00:18</div>
+    <div class="tl-dot-wrap"><div class="tl-dot" style="background:#f5a623"></div></div>
+    <div class="tl-content">
+      <div class="tl-card" style="--card-color:#f5a623;">
+        <div class="tl-card-header">
+          <span class="tl-source-tag" style="color:#f5a623">APP</span>
+          <span class="tl-card-title">First warning — slow DB query detected</span>
+        </div>
+        <div class="tl-log-line">WARN payment-api Slow database query latency=<span class="highlight">1200ms</span> request_id=req_101</div>
+        <div class="tl-think">
+          <span class="think-icon">💭</span>
+          <span class="think-text"><strong>Agent thinks:</strong> 1200ms app-side matches the DB log at 10:01:18 showing <code>SELECT * FROM payments</code> taking 3.2s. This is the <strong>root cause seed</strong>. I'll flag this as <code>sequence_order: 1</code> in the evidence chain.</span>
+        </div>
+        <div class="tl-db-write">
+          <span class="db-tag write">WRITE evidence — seq:1, source: app, category: latency</span>
+          <span class="db-tag write">WRITE agent_actions — tool: save_relevant_evidence</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 3 -->
+    <div class="tl-time">10:01:18</div>
+    <div class="tl-dot-wrap"><div class="tl-dot" style="background:#f5a623"></div></div>
+    <div class="tl-content">
+      <div class="tl-card" style="--card-color:#f5a623;">
+        <div class="tl-card-header">
+          <span class="tl-source-tag" style="color:#f5a623">DB</span>
+          <span class="tl-card-title">Slow query confirmed — unindexed full table scan</span>
+        </div>
+        <div class="tl-log-line">DB WARNING Slow query execution_time=<span class="highlight">3.2s</span> query=<span class="highlight">"SELECT * FROM payments"</span></div>
+        <div class="tl-think">
+          <span class="think-icon">💭</span>
+          <span class="think-text"><strong>Agent thinks:</strong> <code>SELECT * FROM payments</code> with no WHERE clause. Classic N+1 / missing index pattern. This single query is holding connections open for 3.2 seconds, which is why the pool will soon fill up. <strong>Root cause identified.</strong></span>
+        </div>
+        <div class="tl-db-write">
+          <span class="db-tag write">WRITE evidence — seq:2, source: db, category: slow_query</span>
+          <span class="db-tag read">READ knowledge_base — search: "slow query SELECT * FROM"</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 4 -->
+    <div class="tl-time">10:01:43</div>
+    <div class="tl-dot-wrap"><div class="tl-dot" style="background:#f5a623"></div></div>
+    <div class="tl-content">
+      <div class="tl-card" style="--card-color:#f5a623;">
+        <div class="tl-card-header">
+          <span class="tl-source-tag" style="color:#3b82f6">MONITOR</span>
+          <span class="tl-card-title">External alert corroborates DB degradation</span>
+        </div>
+        <div class="tl-log-line">ALERT DatabaseLatencyHigh service=payment-db latency_ms=<span class="highlight">1400</span> threshold=<span class="highlight">800</span></div>
+        <div class="tl-think">
+          <span class="think-icon">💭</span>
+          <span class="think-text"><strong>Agent thinks:</strong> External monitoring independently confirms what I see in the DB logs. Latency is 1400ms vs 800ms threshold — 75% above SLO. This <strong>cross-validates</strong> the slow query finding from two independent sources (DB + monitoring).</span>
+        </div>
+        <div class="tl-db-write">
+          <span class="db-tag write">WRITE evidence — seq:3, source: monitoring, relevance: 0.85</span>
+          <span class="db-tag update">UPDATE incident_metrics — avg_latency_ms: 1400</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 5 -->
+    <div class="tl-time">10:03:45</div>
+    <div class="tl-dot-wrap"><div class="tl-dot" style="background:#ff4757"></div></div>
+    <div class="tl-content">
+      <div class="tl-card" style="--card-color:#ff4757;">
+        <div class="tl-card-header">
+          <span class="tl-source-tag" style="color:#ff4757">DB</span>
+          <span class="tl-card-title">Connection pool approaching limit — cascade begins</span>
+        </div>
+        <div class="tl-log-line">DB WARNING Connection usage high active_connections=<span class="err">145</span> max=<span class="highlight">150</span></div>
+        <div class="tl-think">
+          <span class="think-icon">💭</span>
+          <span class="think-text"><strong>Agent thinks:</strong> 145/150 connections = 96.7% pool usage. The slow query is holding connections open. New requests are queuing. Collapse is <strong>13 seconds away</strong>. I'll cross-reference this with the <code>services</code> table: <code>db_max_connections = 150</code>.</span>
+        </div>
+        <div class="tl-db-write">
+          <span class="db-tag write">WRITE evidence — seq:4, source: db, category: connection_pool</span>
+          <span class="db-tag read">READ services — db_max_connections for payment-db</span>
+          <span class="db-tag update">UPDATE incident_metrics — db_connection_usage_percent: 96.7</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 6 -->
+    <div class="tl-time">10:03:55</div>
+    <div class="tl-dot-wrap"><div class="tl-dot" style="background:#ff4757"></div></div>
+    <div class="tl-content">
+      <div class="tl-card" style="--card-color:#ff4757;">
+        <div class="tl-card-header">
+          <span class="tl-source-tag" style="color:#3b82f6">MONITOR</span>
+          <span class="tl-card-title">Error rate spikes — user impact confirmed</span>
+        </div>
+        <div class="tl-log-line">ALERT ErrorRateSpike service=payment-api error_rate=<span class="err">32%</span> threshold=<span class="highlight">10%</span></div>
+        <div class="tl-think">
+          <span class="think-icon">💭</span>
+          <span class="think-text"><strong>Agent thinks:</strong> 32% error rate is 3.2× above threshold. Real users are failing payments right now. This determines <code>severity = CRITICAL</code> and will set <code>requires_human_approval = TRUE</code>.</span>
+        </div>
+        <div class="tl-db-write">
+          <span class="db-tag write">WRITE evidence — seq:5, source: monitoring, relevance: 0.95</span>
+          <span class="db-tag update">UPDATE incidents — severity: CRITICAL</span>
+          <span class="db-tag update">UPDATE incident_metrics — error_rate_percent: 32</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 7 -->
+    <div class="tl-time">10:03:58</div>
+    <div class="tl-dot-wrap"><div class="tl-dot" style="background:#ff4757"></div></div>
+    <div class="tl-content">
+      <div class="tl-card" style="--card-color:#ff4757;">
+        <div class="tl-card-header">
+          <span class="tl-source-tag" style="color:#ff4757">DB</span>
+          <span class="tl-card-title">Connection pool fully exhausted — hard failure</span>
+        </div>
+        <div class="tl-log-line">DB ERROR Connection pool exhausted active_connections=<span class="err">150</span> max=<span class="err">150</span></div>
+        <div class="tl-think">
+          <span class="think-icon">💭</span>
+          <span class="think-text"><strong>Agent thinks:</strong> Pool is at 150/150. <strong>Zero new connections possible.</strong> Every new request from the app will now get <code>ConnectionPoolExhausted</code>. This is the inflection point — everything downstream is a consequence of <em>this</em> line.</span>
+        </div>
+        <div class="tl-db-write">
+          <span class="db-tag write">WRITE evidence — seq:6, source: db, relevance: 1.0 (critical)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 8 -->
+    <div class="tl-time">10:04:30</div>
+    <div class="tl-dot-wrap"><div class="tl-dot" style="background:#ff4757"></div></div>
+    <div class="tl-content">
+      <div class="tl-card" style="--card-color:#ff4757;">
+        <div class="tl-card-header">
+          <span class="tl-source-tag" style="color:#ff4757">APP</span>
+          <span class="tl-card-title">Application crashes — unhandled exception</span>
+        </div>
+        <div class="tl-log-line">ERROR payment-api Unhandled exception <span class="err">ConnectionPoolExhausted</span></div>
+        <div class="tl-think">
+          <span class="think-icon">💭</span>
+          <span class="think-text"><strong>Agent thinks:</strong> The app has no graceful fallback for pool exhaustion. This unhandled exception will spike memory (goroutines/threads piling up), which explains the kubelet OOM we'll see in 5 seconds. <strong>Causal chain confirmed: slow query → pool exhaustion → app crash → OOMKilled.</strong></span>
+        </div>
+        <div class="tl-db-write">
+          <span class="db-tag write">WRITE evidence — seq:7, source: app, category: exception</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 9 -->
+    <div class="tl-time">10:04:35–37</div>
+    <div class="tl-dot-wrap"><div class="tl-dot" style="background:#ff4757"></div></div>
+    <div class="tl-content">
+      <div class="tl-card" style="--card-color:#ff4757;">
+        <div class="tl-card-header">
+          <span class="tl-source-tag" style="color:#a855f7">INFRA</span>
+          <span class="tl-card-title">Pod OOMKilled — exit code 137</span>
+        </div>
+        <div class="tl-log-line">kubelet Pod payment-api-7f8c9 memory usage high <span class="err">92%</span><br>kubelet Container payment-api restarted <span class="err">exit_code=137</span></div>
+        <div class="tl-think">
+          <span class="think-icon">💭</span>
+          <span class="think-text"><strong>Agent thinks:</strong> <code>exit_code=137</code> = SIGKILL = OOMKilled. Kubernetes killed the container when it hit 92% memory. This is the <strong>infrastructure symptom</strong> of the application-level crash — not the root cause itself. Root cause is still the slow query. I won't get confused here.</span>
+        </div>
+        <div class="tl-db-write">
+          <span class="db-tag write">WRITE evidence — seq:8, source: infra, category: oom_kill</span>
+          <span class="db-tag update">UPDATE incident_metrics — memory_usage_percent: 92</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 10 -->
+    <div class="tl-time">10:04:52</div>
+    <div class="tl-dot-wrap"><div class="tl-dot" style="background:#ff4757"></div></div>
+    <div class="tl-content">
+      <div class="tl-card" style="--card-color:#ff4757;">
+        <div class="tl-card-header">
+          <span class="tl-source-tag" style="color:#ff4757">APP</span>
+          <span class="tl-card-title">Service fully down — 503 to all users</span>
+        </div>
+        <div class="tl-log-line">ERROR payment-api Service unavailable returning <span class="err">503</span></div>
+        <div class="tl-think">
+          <span class="think-icon">💭</span>
+          <span class="think-text"><strong>Agent thinks:</strong> End state of the cascade. All payment requests are returning 503. This triggers <code>create_itsm_ticket</code> with <code>risk_score = 40</code> (contains "restart pod" + "scale" keywords), which means <code>requires_human_approval = TRUE</code>.</span>
+        </div>
+        <div class="tl-db-write">
+          <span class="db-tag write">WRITE evidence — seq:9, source: app, relevance: 0.9</span>
+          <span class="db-tag update">UPDATE incident_metrics — affected_requests_count: all</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 11 -->
+    <div class="tl-time">10:07:07</div>
+    <div class="tl-dot-wrap"><div class="tl-dot" style="background:#39ff8a"></div></div>
+    <div class="tl-content">
+      <div class="tl-card" style="--card-color:#39ff8a;">
+        <div class="tl-card-header">
+          <span class="tl-source-tag" style="color:#3b82f6">MONITOR</span>
+          <span class="tl-card-title">Recovery detected — service restored</span>
+        </div>
+        <div class="tl-log-line">ALERT RecoveryDetected service=payment-api error_rate=<span class="ok">2%</span></div>
+        <div class="tl-think">
+          <span class="think-icon">💭</span>
+          <span class="think-text"><strong>Agent thinks:</strong> Kubernetes restarted the pod and connections were cleared. Error rate back to 2%. <strong>Total downtime: ~7 minutes.</strong> I'll write <code>resolution_time_seconds: 424</code> and update the <code>knowledge_base</code> with this resolution pattern.</span>
+        </div>
+        <div class="tl-db-write">
+          <span class="db-tag update">UPDATE incidents — status: RESOLVED, resolved_at: 10:07:07</span>
+          <span class="db-tag update">UPDATE incident_metrics — resolution_time_seconds: 424</span>
+          <span class="db-tag write">WRITE knowledge_base — pattern: "connection_pool_exhaustion"</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end tl-grid -->
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PANEL 2: AGENT THINKING (ReAct Loops)
+════════════════════════════════════════════ -->
+<div id="panel-react" class="panel">
+<div class="react-wrap">
+  <div class="react-title">ReAct Loop Trace</div>
+  <div class="react-sub">Every Thought → Action → Observation cycle the agent runs through to reach its final ticket</div>
+
+  <!-- LOOP 1 -->
+  <div class="loop">
+    <div class="loop-header">
+      <span class="loop-num">01</span>
+      <div>
+        <div class="loop-label">Loop — <span>Initial Log Ingestion & Evidence Seeding</span></div>
+      </div>
+    </div>
+    <div class="loop-body">
+      <div class="step-block">
+        <div class="step-label thought">💭 Thought</div>
+        <div class="step-content">
+          I've received a log batch for <code>app_id: 01</code>. I need to establish a timeline first. Reading across all four sources (app, db, infra, monitoring), I can already see latency degradation starting at <strong>10:00:18</strong>. Before doing anything else, I'll archive the raw logs and open the incident record.
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-label action">⚡ Action</div>
+        <div class="step-content">
+          <span class="tool-call">
+            <span class="fn">create_itsm_ticket</span>(<br>
+            &nbsp;&nbsp;<span class="param">incident_id</span>=<span class="val">"INC-2026-01"</span>,<br>
+            &nbsp;&nbsp;<span class="param">status</span>=<span class="val">"ANALYZING"</span>,<br>
+            &nbsp;&nbsp;<span class="param">app_id</span>=<span class="val">"01"</span><br>
+            )
+          </span>
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-label obs">👁 Observation</div>
+        <div class="step-content">
+          <div class="obs-box db-write">
+            → INSERT incidents (incident_id="INC-2026-01", status="ANALYZING")<br>
+            → INSERT raw_logs (app_logs, database_logs, infra_logs, monitoring_logs)<br>
+            → READ services WHERE app_id="01" → max_latency=800ms, db_max_connections=150<br><br>
+            ✓ Incident record created. SLO thresholds loaded from services table.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOOP 2 -->
+  <div class="loop">
+    <div class="loop-header">
+      <span class="loop-num">02</span>
+      <div>
+        <div class="loop-label">Loop — <span>Root Cause Identification</span></div>
+      </div>
+    </div>
+    <div class="loop-body">
+      <div class="step-block">
+        <div class="step-label thought">💭 Thought</div>
+        <div class="step-content">
+          Cross-referencing timestamps: the DB slow query at <strong>10:01:18</strong> (3.2s for <code>SELECT * FROM payments</code>) precedes the connection pool warning at <strong>10:03:45</strong> by exactly 2 min 27 sec. The query is holding connections open. That's the root cause. I need to save these as linked evidence items with <code>sequence_order</code> to preserve the causal chain.
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-label action">⚡ Action</div>
+        <div class="step-content">
+          <span class="tool-call">
+            <span class="fn">save_relevant_evidence</span>(<br>
+            &nbsp;&nbsp;<span class="param">evidence_items</span>=[<br>
+            &nbsp;&nbsp;&nbsp;{log: <span class="val">"WARN Slow DB query 1200ms"</span>,<br>
+            &nbsp;&nbsp;&nbsp; source: <span class="val">"app"</span>, seq: <span class="val">1</span>},<br>
+            &nbsp;&nbsp;&nbsp;{log: <span class="val">"SELECT * FROM payments 3.2s"</span>,<br>
+            &nbsp;&nbsp;&nbsp; source: <span class="val">"db"</span>, seq: <span class="val">2</span>},<br>
+            &nbsp;&nbsp;&nbsp;{log: <span class="val">"latency_ms=1400 threshold=800"</span>,<br>
+            &nbsp;&nbsp;&nbsp; source: <span class="val">"monitoring"</span>, seq: <span class="val">3</span>}<br>
+            &nbsp;&nbsp;]<br>)
+          </span>
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-label obs">👁 Observation</div>
+        <div class="step-content">
+          <div class="obs-box db-write">
+            → INSERT evidence ×3 rows (incident_id="INC-2026-01")<br>
+            → READ knowledge_base WHERE symptom_keywords @> '{"slow_query","SELECT_star"}'<br>
+            ← knowledge_base: 0 matching records (first occurrence)<br><br>
+            ✓ 3 evidence items saved. No historical match — novel pattern.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOOP 3 -->
+  <div class="loop">
+    <div class="loop-header">
+      <span class="loop-num">03</span>
+      <div>
+        <div class="loop-label">Loop — <span>Cascade Evidence + Severity Escalation</span></div>
+      </div>
+    </div>
+    <div class="loop-body">
+      <div class="step-block">
+        <div class="step-label thought">💭 Thought</div>
+        <div class="step-content">
+          The cascade is clear now. Pool at 145/150 → 150/150 → <code>ConnectionPoolExhausted</code> → app holds connections → memory spikes → <code>exit_code=137</code> (OOMKill) → 503. I need to save 6 more evidence items, update severity to CRITICAL, and log the business impact. The monitoring alert at 10:03:55 shows <strong>32% error rate</strong>.
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-label action">⚡ Action</div>
+        <div class="step-content">
+          <span class="tool-call">
+            <span class="fn">save_relevant_evidence</span>(<br>
+            &nbsp;&nbsp;evidence_items=[<br>
+            &nbsp;&nbsp;&nbsp;{log: <span class="val">"connections=145/150"</span>, seq:<span class="val">4</span>},<br>
+            &nbsp;&nbsp;&nbsp;{log: <span class="val">"error_rate=32%"</span>, seq:<span class="val">5</span>},<br>
+            &nbsp;&nbsp;&nbsp;{log: <span class="val">"pool exhausted 150/150"</span>, seq:<span class="val">6</span>},<br>
+            &nbsp;&nbsp;&nbsp;{log: <span class="val">"ConnectionPoolExhausted"</span>, seq:<span class="val">7</span>},<br>
+            &nbsp;&nbsp;&nbsp;{log: <span class="val">"exit_code=137 memory 92%"</span>, seq:<span class="val">8</span>},<br>
+            &nbsp;&nbsp;&nbsp;{log: <span class="val">"503 service unavailable"</span>, seq:<span class="val">9</span>}<br>
+            &nbsp;&nbsp;]<br>)
+          </span>
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-label obs">👁 Observation</div>
+        <div class="step-content">
+          <div class="obs-box db-write">
+            → INSERT evidence ×6 rows<br>
+            → UPDATE incidents SET severity="CRITICAL"<br>
+            → UPDATE incident_metrics SET error_rate_percent=32, memory_usage_percent=92, peak_latency_ms=5200<br><br>
+            ✓ Full cascade documented. Total evidence: 9 items across 4 sources.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOOP 4 -->
+  <div class="loop">
+    <div class="loop-header">
+      <span class="loop-num">04</span>
+      <div>
+        <div class="loop-label">Loop — <span>Risk Scoring the Recovery Plan</span></div>
+      </div>
+    </div>
+    <div class="loop-body">
+      <div class="step-block">
+        <div class="step-label thought">💭 Thought</div>
+        <div class="step-content">
+          My recovery plan contains: "restart pod", "scale connections", "add index", "clear slow query cache". I need to score this before creating the ticket. The plan has risky operations — "restart" and "scale" are in the medium-risk keywords. I also need to check <code>similar_incidents</code> to see if this has happened before and what worked.
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-label action">⚡ Action</div>
+        <div class="step-content">
+          <span class="tool-call">
+            <span class="fn">calculate_risk_score</span>(<br>
+            &nbsp;&nbsp;<span class="param">plan_text</span>=<span class="val">"1. restart pod payment-api\n2. scale db connections\n3. add index on payments\n4. optimize SELECT query\n5. rollback if latency > 2x"</span><br>)
+          </span>
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-label obs">👁 Observation</div>
+        <div class="step-content">
+          <div class="obs-box">
+            "restart pod" → +10 pts (medium)<br>
+            "scale" → +10 pts (medium)<br>
+            "rollback" → +10 pts (medium)<br>
+            "index" → +10 pts (medium)<br>
+            ────────────────────────<br>
+            Total risk score: <strong>40 / 100</strong><br>
+            → requires_human_approval = TRUE (> 30)<br>
+            → READ similar_incidents: 0 matches (first time)<br>
+            ✓ Risk assessed. Human approval required.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOOP 5 -->
+  <div class="loop">
+    <div class="loop-header">
+      <span class="loop-num">05</span>
+      <div>
+        <div class="loop-label">Loop — <span>Final Ticket Creation + Knowledge Base Update</span></div>
+      </div>
+    </div>
+    <div class="loop-body">
+      <div class="step-block">
+        <div class="step-label thought">💭 Thought</div>
+        <div class="step-content">
+          I have: 9 evidence items, root cause confirmed as <code>SELECT * FROM payments</code> unindexed full scan, risk score 40, severity CRITICAL, recovery plan with 5 steps, 7-minute downtime window documented. Time to finalize. I'll also write the recovery_steps as individual rows so an SRE can approve/execute per-step, and seed the knowledge_base for next time.
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-label action">⚡ Action</div>
+        <div class="step-content">
+          <span class="tool-call">
+            <span class="fn">create_itsm_ticket</span>(<br>
+            &nbsp;&nbsp;<span class="param">incident_id</span>=<span class="val">"INC-2026-01"</span>,<br>
+            &nbsp;&nbsp;<span class="param">risk_score</span>=<span class="val">40</span>,<br>
+            &nbsp;&nbsp;<span class="param">root_cause</span>=<span class="val">"Unindexed SELECT * FROM payments exhausted DB connection pool"</span>,<br>
+            &nbsp;&nbsp;<span class="param">recovery_plan</span>=<span class="val">"[5-step plan]"</span>,<br>
+            &nbsp;&nbsp;<span class="param">evidence_list</span>=<span class="val">[9 items]</span><br>)
+          </span>
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-label obs">👁 Observation</div>
+        <div class="step-content">
+          <div class="obs-box db-write">
+            → UPDATE incidents SET status="PENDING_APPROVAL", root_cause=..., risk_score=40<br>
+            → INSERT recovery_steps ×5 rows (step_order 1–5)<br>
+            → INSERT similar_incidents (self-ref seeded for future)<br>
+            → INSERT knowledge_base (pattern: "connection_pool_exhaustion", solution: "add index + pool tuning")<br>
+            → INSERT agent_actions (tool: create_itsm_ticket, exec_time: 84ms)<br><br>
+            ✓ Ticket INC-2026-01 finalized. Awaiting human approval.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PANEL 3: DB OPERATIONS
+════════════════════════════════════════════ -->
+<div id="panel-db" class="panel">
+<div class="db-wrap">
+
+  <div class="db-section-title">Every SQL Operation</div>
+  <div class="db-section-sub">The exact writes and reads the MCP server executes against PostgreSQL during this incident</div>
+
+  <div class="db-op-grid">
+
+    <!-- OP 1 -->
+    <div class="db-op-card">
+      <div class="db-op-header">
+        <span class="db-op-icon">📥</span>
+        <span class="db-op-title">1 · Open Incident Record</span>
+        <span class="db-op-table">→ incidents</span>
+      </div>
+      <div class="db-op-body">
+        <div class="sql-block">
+<span class="sql-kw">INSERT INTO</span> <span class="sql-table">incidents</span> (<br>
+  incident_id, app_id, status,<br>
+  detected_at, created_at<br>
+) <span class="sql-kw">VALUES</span> (<br>
+  <span class="sql-str">'INC-2026-01'</span>, <span class="sql-str">'01'</span>, <span class="sql-str">'ANALYZING'</span>,<br>
+  <span class="sql-str">'2026-02-05T10:00:18Z'</span>, <span class="sql-kw">NOW</span>()<br>
+) <span class="sql-kw">ON CONFLICT</span> (incident_id)<br>
+  <span class="sql-kw">DO NOTHING</span>;</div>
+        <div class="db-op-note"><strong>Trigger:</strong> First log received. Sets status to ANALYZING so the SRE dashboard shows work in progress immediately. Uses <code>ON CONFLICT DO NOTHING</code> to be idempotent — safe to retry.</div>
+      </div>
+    </div>
+
+    <!-- OP 2 -->
+    <div class="db-op-card">
+      <div class="db-op-header">
+        <span class="db-op-icon">📄</span>
+        <span class="db-op-title">2 · Archive Raw Logs</span>
+        <span class="db-op-table">→ raw_logs</span>
+      </div>
+      <div class="db-op-body">
+        <div class="sql-block">
+<span class="sql-kw">INSERT INTO</span> <span class="sql-table">raw_logs</span> (<br>
+  incident_id,<br>
+  app_logs, database_logs,<br>
+  infrastructure_logs, monitoring_logs<br>
+) <span class="sql-kw">VALUES</span> (<br>
+  <span class="sql-str">'INC-2026-01'</span>,<br>
+  <span class="sql-str">'2026-02-05T10:00:03Z INFO...'</span>,<br>
+  <span class="sql-str">'2026-02-05T10:01:18Z DB...'</span>,<br>
+  <span class="sql-str">'2026-02-05T10:04:35Z kubelet...'</span>,<br>
+  <span class="sql-str">'2026-02-05T10:01:43Z ALERT...'</span><br>
+);</div>
+        <div class="db-op-note"><strong>Why:</strong> The original log batch is immutable. You must be able to re-run analysis on the exact same input even after the incident is resolved. This row is <em>never updated</em>.</div>
+      </div>
+    </div>
+
+    <!-- OP 3 -->
+    <div class="db-op-card">
+      <div class="db-op-header">
+        <span class="db-op-icon">⚙️</span>
+        <span class="db-op-title">3 · Load SLO Thresholds</span>
+        <span class="db-op-table">← services</span>
+      </div>
+      <div class="db-op-body">
+        <div class="sql-block">
+<span class="sql-kw">SELECT</span><br>
+  max_latency_ms,<br>
+  max_error_rate_percent,<br>
+  db_max_connections,<br>
+  criticality, team_owner<br>
+<span class="sql-kw">FROM</span> <span class="sql-table">services</span><br>
+<span class="sql-kw">WHERE</span> app_id = <span class="sql-str">'01'</span>;</div>
+        <div class="db-op-note"><strong>Returns:</strong> max_latency=800ms, max_error_rate=10%, db_max_connections=150, criticality=CRITICAL. Agent uses these to judge severity rather than relying on hard-coded prompt values.</div>
+      </div>
+    </div>
+
+    <!-- OP 4 -->
+    <div class="db-op-card">
+      <div class="db-op-header">
+        <span class="db-op-icon">🔍</span>
+        <span class="db-op-title">4 · Write Evidence Chain</span>
+        <span class="db-op-table">→ evidence (×9 rows)</span>
+      </div>
+      <div class="db-op-body">
+        <div class="sql-block">
+<span class="sql-kw">INSERT INTO</span> <span class="sql-table">evidence</span> (<br>
+  incident_id, log_line, source,<br>
+  timestamp, reasoning,<br>
+  relevance_score, category,<br>
+  sequence_order<br>
+) <span class="sql-kw">VALUES</span><br>
+<span class="sql-comment">-- seq 1: first slow query warning</span><br>
+(<span class="sql-str">'INC-2026-01'</span>, <span class="sql-str">'WARN...1200ms'</span>,<br>
+ <span class="sql-str">'app'</span>, <span class="sql-str">'10:00:18'</span>,<br>
+ <span class="sql-str">'Root cause seed'</span>, <span class="sql-val">0.80</span>, <span class="sql-str">'latency'</span>, <span class="sql-val">1</span>),<br>
+<span class="sql-comment">-- seq 6: pool exhausted (most critical)</span><br>
+(<span class="sql-str">'INC-2026-01'</span>, <span class="sql-str">'DB ERROR 150/150'</span>,<br>
+ <span class="sql-str">'db'</span>, <span class="sql-str">'10:03:58'</span>,<br>
+ <span class="sql-str">'Inflection point'</span>, <span class="sql-val">1.0</span>, <span class="sql-str">'connection_pool'</span>, <span class="sql-val">6</span>),<br>
+<span class="sql-comment">-- ... 7 more rows</span></div>
+        <div class="db-op-note"><strong>Key design:</strong> <code>sequence_order</code> preserves causality. <code>relevance_score=1.0</code> on the pool exhaustion row marks it as the inflection point, making it easy to highlight in the SRE dashboard.</div>
+      </div>
+    </div>
+
+    <!-- OP 5 -->
+    <div class="db-op-card">
+      <div class="db-op-header">
+        <span class="db-op-icon">🔧</span>
+        <span class="db-op-title">5 · Write Recovery Steps</span>
+        <span class="db-op-table">→ recovery_steps (×5 rows)</span>
+      </div>
+      <div class="db-op-body">
+        <div class="sql-block">
+<span class="sql-kw">INSERT INTO</span> <span class="sql-table">recovery_steps</span> (<br>
+  incident_id, step_order,<br>
+  step_description, step_type,<br>
+  risk_level, requires_approval<br>
+) <span class="sql-kw">VALUES</span><br>
+(<span class="sql-str">'INC-2026-01'</span>, <span class="sql-val">1</span>,<br>
+ <span class="sql-str">'Restart payment-api pod'</span>,<br>
+ <span class="sql-str">'restart'</span>, <span class="sql-str">'MEDIUM'</span>, <span class="sql-val">true</span>),<br>
+(<span class="sql-str">'INC-2026-01'</span>, <span class="sql-val">2</span>,<br>
+ <span class="sql-str">'Add index on payments table'</span>,<br>
+ <span class="sql-str">'optimize_query'</span>, <span class="sql-str">'LOW'</span>, <span class="sql-val">false</span>),<br>
+(<span class="sql-str">'INC-2026-01'</span>, <span class="sql-val">3</span>,<br>
+ <span class="sql-str">'Tune db connection pool'</span>,<br>
+ <span class="sql-str">'scale'</span>, <span class="sql-str">'MEDIUM'</span>, <span class="sql-val">true</span>),<br>
+<span class="sql-comment">-- steps 4–5 omitted for space</span></div>
+        <div class="db-op-note"><strong>Why this matters:</strong> Instead of one text blob, the SRE can see per-step status. Step 2 (add index) can be done immediately with no approval. Step 1 (restart) requires human sign-off first.</div>
+      </div>
+    </div>
+
+    <!-- OP 6 -->
+    <div class="db-op-card">
+      <div class="db-op-header">
+        <span class="db-op-icon">🧠</span>
+        <span class="db-op-title">6 · Seed Knowledge Base</span>
+        <span class="db-op-table">→ knowledge_base</span>
+      </div>
+      <div class="db-op-body">
+        <div class="sql-block">
+<span class="sql-kw">INSERT INTO</span> <span class="sql-table">knowledge_base</span> (<br>
+  error_pattern,<br>
+  symptom_keywords,<br>
+  affected_services,<br>
+  recommended_solution,<br>
+  created_from_incident_id<br>
+) <span class="sql-kw">VALUES</span> (<br>
+  <span class="sql-str">'db_connection_pool_exhaustion'</span>,<br>
+  <span class="sql-val">ARRAY</span>[<span class="sql-str">'ConnectionPoolExhausted'</span>,<br>
+       <span class="sql-str">'slow_query'</span>, <span class="sql-str">'SELECT_star'</span>,<br>
+       <span class="sql-str">'exit_code_137'</span>],<br>
+  <span class="sql-val">ARRAY</span>[<span class="sql-str">'payment-api'</span>, <span class="sql-str">'payment-db'</span>],<br>
+  <span class="sql-str">'Add index + tune pool size'</span>,<br>
+  <span class="sql-str">'INC-2026-01'</span><br>
+);</div>
+        <div class="db-op-note"><strong>Next time</strong> this pattern appears, the agent queries <code>WHERE symptom_keywords @> ARRAY['ConnectionPoolExhausted']</code> (GIN index) and gets this solution instantly — no need to re-reason from scratch.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PANEL 4: FINAL TICKET SUMMARY
+════════════════════════════════════════════ -->
+<div id="panel-summary" class="panel">
+<div class="summary-wrap">
+
+  <div class="sum-grid">
+    <div class="sum-card" style="--card-glow:rgba(255,71,87,0.08)">
+      <div class="sum-icon">⚡</div>
+      <div class="sum-val">CRITICAL<span></span></div>
+      <div class="sum-label">Severity</div>
+      <div class="sum-sub">All payment requests returning 503. 32% error rate vs 10% threshold.</div>
+    </div>
+    <div class="sum-card" style="--card-glow:rgba(245,166,35,0.08)">
+      <div class="sum-icon">🎯</div>
+      <div class="sum-val">40<span> / 100</span></div>
+      <div class="sum-label">Risk Score</div>
+      <div class="risk-bar-wrap"><div class="risk-bar"></div></div>
+      <div class="sum-sub">Triggered by: restart pod (+10), scale (+10), rollback (+10), index (+10)</div>
+    </div>
+    <div class="sum-card" style="--card-glow:rgba(57,255,138,0.06)">
+      <div class="sum-icon">⏱</div>
+      <div class="sum-val">7<span>min</span></div>
+      <div class="sum-label">Total Downtime</div>
+      <div class="sum-sub">10:00:18 first warning → 10:07:07 RecoveryDetected. 424 seconds.</div>
+    </div>
+  </div>
+
+  <!-- CAUSAL CHAIN -->
+  <div class="causal-chain">
+    <div class="chain-title">⚠ Root Cause Causal Chain</div>
+    <div class="chain-nodes">
+      <div class="chain-node">
+        <span class="node-time">10:01:18</span>
+        <strong>Slow Query</strong>
+        <span class="node-label">SELECT * FROM payments<br>no index, 3.2s exec time</span>
+      </div>
+      <span class="chain-arrow">→</span>
+      <div class="chain-node">
+        <span class="node-time">10:03:45</span>
+        <strong>Pool Filling</strong>
+        <span class="node-label">145/150 connections<br>held open by slow queries</span>
+      </div>
+      <span class="chain-arrow">→</span>
+      <div class="chain-node" style="border-color:#ff4757">
+        <span class="node-time">10:03:58</span>
+        <strong>Pool Exhausted</strong>
+        <span class="node-label" style="color:#ff4757">150/150 — zero new<br>connections possible</span>
+      </div>
+      <span class="chain-arrow">→</span>
+      <div class="chain-node">
+        <span class="node-time">10:04:30</span>
+        <strong>App Exception</strong>
+        <span class="node-label">ConnectionPoolExhausted<br>memory leak begins</span>
+      </div>
+      <span class="chain-arrow">→</span>
+      <div class="chain-node">
+        <span class="node-time">10:04:37</span>
+        <strong>OOMKilled</strong>
+        <span class="node-label">exit_code=137, memory 92%<br>Kubernetes kills pod</span>
+      </div>
+      <span class="chain-arrow">→</span>
+      <div class="chain-node" style="border-color:#ff4757">
+        <span class="node-time">10:04:52</span>
+        <strong>503 Outage</strong>
+        <span class="node-label" style="color:#ff4757">All users affected<br>payments down</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL TICKET JSON -->
+  <div class="db-section-title">Final Ticket in PostgreSQL</div>
+  <div class="db-section-sub" style="margin-bottom:20px">What INC-2026-01 looks like after all 5 ReAct loops complete</div>
+  <div class="sql-block" style="font-size:11px; line-height: 1.9;">
+<span class="sql-comment">-- incidents table row</span><br>
+{<br>
+&nbsp;&nbsp;<span class="sql-str">"incident_id"</span>: <span class="sql-val">"INC-2026-01"</span>,<br>
+&nbsp;&nbsp;<span class="sql-str">"app_id"</span>: <span class="sql-val">"01"</span>,<br>
+&nbsp;&nbsp;<span class="sql-str">"status"</span>: <span class="sql-val">"PENDING_APPROVAL"</span>,<br>
+&nbsp;&nbsp;<span class="sql-str">"severity"</span>: <span class="sql-val">"CRITICAL"</span>,<br>
+&nbsp;&nbsp;<span class="sql-str">"root_cause"</span>: <span class="sql-val">"Unindexed full table scan on payments table held 150 DB connections open, exhausting the pool. App had no graceful fallback, causing memory leak → OOMKill → 503."</span>,<br>
+&nbsp;&nbsp;<span class="sql-str">"risk_score"</span>: <span class="sql-val">40</span>,<br>
+&nbsp;&nbsp;<span class="sql-str">"requires_human_approval"</span>: <span class="sql-val">true</span>,<br>
+&nbsp;&nbsp;<span class="sql-str">"confidence_score"</span>: <span class="sql-val">0.97</span>,<br>
+&nbsp;&nbsp;<span class="sql-str">"detected_at"</span>: <span class="sql-val">"2026-02-05T10:00:18Z"</span>,<br>
+&nbsp;&nbsp;<span class="sql-str">"resolved_at"</span>: <span class="sql-val">"2026-02-05T10:07:07Z"</span>,<br>
+<br>
+&nbsp;&nbsp;<span class="sql-comment">-- from evidence table (9 rows, ordered by sequence_order)</span><br>
+&nbsp;&nbsp;<span class="sql-str">"evidence_count"</span>: <span class="sql-val">9</span>,<br>
+&nbsp;&nbsp;<span class="sql-str">"critical_evidence"</span>: <span class="sql-val">"seq:6 — pool exhausted 150/150 (relevance: 1.0)"</span>,<br>
+<br>
+&nbsp;&nbsp;<span class="sql-comment">-- from recovery_steps table (5 rows)</span><br>
+&nbsp;&nbsp;<span class="sql-str">"recovery_steps"</span>: [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="sql-str">"order"</span>:<span class="sql-val">1</span>, <span class="sql-str">"action"</span>:<span class="sql-val">"Restart pod"</span>, <span class="sql-str">"risk"</span>:<span class="sql-val">"MEDIUM"</span>, <span class="sql-str">"approved"</span>:<span class="sql-val">false</span>},<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="sql-str">"order"</span>:<span class="sql-val">2</span>, <span class="sql-str">"action"</span>:<span class="sql-val">"CREATE INDEX ON payments(id, created_at)"</span>, <span class="sql-str">"risk"</span>:<span class="sql-val">"LOW"</span>, <span class="sql-str">"approved"</span>:<span class="sql-val">true</span>},<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="sql-str">"order"</span>:<span class="sql-val">3</span>, <span class="sql-str">"action"</span>:<span class="sql-val">"Tune db_max_connections to 200"</span>, <span class="sql-str">"risk"</span>:<span class="sql-val">"MEDIUM"</span>, <span class="sql-str">"approved"</span>:<span class="sql-val">false</span>},<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="sql-str">"order"</span>:<span class="sql-val">4</span>, <span class="sql-str">"action"</span>:<span class="sql-val">"Rewrite SELECT * with pagination"</span>, <span class="sql-str">"risk"</span>:<span class="sql-val">"LOW"</span>, <span class="sql-str">"approved"</span>:<span class="sql-val">true</span>},<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="sql-str">"order"</span>:<span class="sql-val">5</span>, <span class="sql-str">"action"</span>:<span class="sql-val">"Set connection timeout 30s + circuit breaker"</span>, <span class="sql-str">"risk"</span>:<span class="sql-val">"LOW"</span>, <span class="sql-str">"approved"</span>:<span class="sql-val">true</span>}<br>
+&nbsp;&nbsp;],<br>
+<br>
+&nbsp;&nbsp;<span class="sql-comment">-- from incident_metrics table</span><br>
+&nbsp;&nbsp;<span class="sql-str">"metrics"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="sql-str">"avg_latency_ms"</span>: <span class="sql-val">1400</span>, <span class="sql-str">"peak_latency_ms"</span>: <span class="sql-val">5200</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="sql-str">"error_rate_percent"</span>: <span class="sql-val">32</span>, <span class="sql-str">"memory_usage_percent"</span>: <span class="sql-val">92</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="sql-str">"db_connection_usage_percent"</span>: <span class="sql-val">100</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="sql-str">"resolution_time_seconds"</span>: <span class="sql-val">424</span><br>
+&nbsp;&nbsp;},<br>
+<br>
+&nbsp;&nbsp;<span class="sql-comment">-- from knowledge_base table (written for future incidents)</span><br>
+&nbsp;&nbsp;<span class="sql-str">"knowledge_seeded"</span>: <span class="sql-val">true</span>,<br>
+&nbsp;&nbsp;<span class="sql-str">"pattern"</span>: <span class="sql-val">"db_connection_pool_exhaustion"</span><br>
+}
+  </div>
+
+</div>
+</div>
+
+<script>
+function showPanel(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({ top: 0 });
+}
+</script>
+</body>
+</html>

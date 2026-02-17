@@ -17,3 +17,6 @@ langchain-google-genai    # Gemini API integration
 langgraph                 # The ReAct framework
 pydantic                  # Data validation/Schema
 python-dotenv             # Environment variable management
+fastmcp
+psycopg2-binary
+uvicorn

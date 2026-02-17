@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ITSM Agent — Database Schema</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #080c14;
+    --panel:    #0d1320;
+    --border:   #1a2540;
+    --accent:   #00e5ff;
+    --accent2:  #7c4dff;
+    --accent3:  #ff4081;
+    --accent4:  #69ff47;
+    --accent5:  #ffab40;
+    --text:     #c8d6f0;
+    --muted:    #4a5880;
+    --line:     rgba(0,229,255,0.25);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID NOISE BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative; z-index: 10;
+    padding: 48px 60px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-end; justify-content: space-between;
+  }
+  .header-left h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.4rem; font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+  .header-left h1 span { color: var(--accent); }
+  .header-left p {
+    margin-top: 6px; font-size: 0.75rem;
+    color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .legend {
+    display: flex; gap: 20px; align-items: center;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  main {
+    position: relative; z-index: 1;
+    padding: 40px 60px 80px;
+  }
+
+  /* ── SECTION TITLE ── */
+  .section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.65rem; font-weight: 700;
+    letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ── SCHEMA GRID ── */
+  .schema-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .schema-grid.two-col {
+    grid-template-columns: repeat(2, 1fr);
+    margin-top: 24px;
+  }
+
+  /* ── TABLE CARD ── */
+  .table-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    cursor: pointer;
+    position: relative;
+  }
+  .table-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .table-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--card-accent, var(--accent));
+    opacity: 0.8;
+  }
+
+  .card-header {
+    padding: 16px 20px 12px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    background: color-mix(in srgb, var(--card-accent, var(--accent)) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--card-accent, var(--accent)) 30%, transparent);
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem; font-weight: 700;
+    color: #fff; letter-spacing: 0.02em;
+  }
+  .card-badge {
+    margin-left: auto;
+    padding: 2px 8px; border-radius: 20px;
+    font-size: 0.6rem; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: color-mix(in srgb, var(--card-accent, var(--accent)) 15%, transparent);
+    color: var(--card-accent, var(--accent));
+    border: 1px solid color-mix(in srgb, var(--card-accent, var(--accent)) 30%, transparent);
+  }
+
+  /* ── FIELDS ── */
+  .card-fields {
+    padding: 12px 0 4px;
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 16px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 20px;
+    transition: background 0.15s;
+  }
+  .field-row:hover { background: rgba(255,255,255,0.03); }
+  .field-icon { font-size: 0.65rem; text-align: center; }
+  .field-name {
+    font-size: 0.72rem; color: var(--text);
+  }
+  .field-name.pk { color: var(--accent5); font-weight: 700; }
+  .field-name.fk { color: var(--accent2); }
+  .field-type {
+    font-size: 0.62rem; color: var(--muted);
+    background: rgba(255,255,255,0.04);
+    padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ── RATIONALE SECTION ── */
+  .card-rationale {
+    margin: 8px 20px 16px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    border-left: 2px solid var(--card-accent, var(--accent));
+    font-size: 0.68rem; line-height: 1.6;
+    color: var(--muted);
+  }
+  .card-rationale strong {
+    display: block; margin-bottom: 4px;
+    font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--card-accent, var(--accent)); font-weight: 700;
+  }
+
+  /* ── RELATIONS DIAGRAM ── */
+  .relations-section {
+    margin-top: 48px;
+  }
+  .relations-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .relations-box::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  }
+
+  svg.relations-svg {
+    width: 100%; height: 480px; display: block;
+  }
+
+  /* ── RELATION NODE ── */
+  .rel-node {
+    rx: 10; ry: 10;
+    transition: all 0.2s;
+  }
+
+  /* ── AGENT FLOW ── */
+  .agent-flow {
+    margin-top: 48px;
+  }
+  .flow-grid {
+    display: flex; align-items: center; gap: 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+  .flow-grid::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent4), var(--accent), var(--accent2));
+  }
+  .flow-step {
+    flex: 1; padding: 28px 24px;
+    border-right: 1px solid var(--border);
+    position: relative;
+  }
+  .flow-step:last-child { border-right: none; }
+  .flow-step-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem; font-weight: 800;
+    color: var(--border);
+    position: absolute; top: 16px; right: 20px;
+    line-height: 1;
+  }
+  .flow-step-icon { font-size: 1.4rem; margin-bottom: 10px; }
+  .flow-step-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem; font-weight: 700; color: #fff;
+    margin-bottom: 6px;
+  }
+  .flow-step-tables {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;
+  }
+  .flow-table-tag {
+    font-size: 0.62rem; padding: 3px 8px; border-radius: 20px;
+    background: rgba(0,229,255,0.1); color: var(--accent);
+    border: 1px solid rgba(0,229,255,0.2);
+  }
+  .flow-step p { font-size: 0.7rem; color: var(--muted); line-height: 1.5; }
+
+  /* ── SCROLL REVEAL ── */
+  .table-card {
+    opacity: 0; transform: translateY(20px);
+    animation: revealCard 0.5s ease forwards;
+  }
+  @keyframes revealCard {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .table-card:nth-child(1)  { animation-delay: 0.05s; }
+  .table-card:nth-child(2)  { animation-delay: 0.10s; }
+  .table-card:nth-child(3)  { animation-delay: 0.15s; }
+  .table-card:nth-child(4)  { animation-delay: 0.20s; }
+  .table-card:nth-child(5)  { animation-delay: 0.25s; }
+  .table-card:nth-child(6)  { animation-delay: 0.30s; }
+  .table-card:nth-child(7)  { animation-delay: 0.35s; }
+  .table-card:nth-child(8)  { animation-delay: 0.40s; }
+  .table-card:nth-child(9)  { animation-delay: 0.45s; }
+  .table-card:nth-child(10) { animation-delay: 0.50s; }
+
+  .glow-pulse {
+    animation: glowPulse 3s ease-in-out infinite;
+  }
+  @keyframes glowPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>ITSM <span>ReAct Agent</span> — DB Schema</h1>
+    <p>PostgreSQL · 10 Tables · Production-Grade ITSM Design</p>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#ffab40"></div>Primary Key</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7c4dff"></div>Foreign Key</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4a5880"></div>Field</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ROW 1: Core tables -->
+  <div class="section-label">Core Engine</div>
+  <div class="schema-grid">
+
+    <!-- 1. INCIDENTS -->
+    <div class="table-card" style="--card-accent: #00e5ff;">
+      <div class="card-header">
+        <div class="card-icon">🎯</div>
+        <span class="card-title">incidents</span>
+        <span class="card-badge">Core</span>
+      </div>
+      <div class="card-fields">
+        <div class="field-row"><span class="field-icon">🔑</span><span class="field-name pk">id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="field-row"><span class="field-icon">🔑</span><span class="field-name pk">incident_id</span><span class="field-type">VARCHAR UNIQUE</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">app_id</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">status</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">severity</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">root_cause</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">risk_score</span><span class="field-type">INTEGER</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">recovery_plan</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">agent_notes</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">confidence_score</span><span class="field-type">FLOAT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">requires_human_approval</span><span class="field-type">BOOLEAN</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">created_at</span><span class="field-type">TIMESTAMPTZ</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">resolved_at</span><span class="field-type">TIMESTAMPTZ</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">approved_by</span><span class="field-type">VARCHAR</span></div>
+      </div>
+      <div class="card-rationale">
+        <strong>Why this table?</strong>
+        The central hub — every other table references it. Stores the full lifecycle of an incident from detection to resolution, including the agent's final verdict and all human-approval metadata. Without it, nothing else exists.
+      </div>
+    </div>
+
+    <!-- 2. EVIDENCE -->
+    <div class="table-card" style="--card-accent: #69ff47;">
+      <div class="card-header">
+        <div class="card-icon">🔍</div>
+        <span class="card-title">evidence</span>
+        <span class="card-badge">Agent Output</span>
+      </div>
+      <div class="card-fields">
+        <div class="field-row"><span class="field-icon">🔑</span><span class="field-name pk">id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="field-row"><span class="field-icon">🔗</span><span class="field-name fk">incident_id</span><span class="field-type">FK → incidents</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">log_line</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">source</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">timestamp</span><span class="field-type">TIMESTAMPTZ</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">reasoning</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">relevance_score</span><span class="field-type">FLOAT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">log_level</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">category</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">sequence_order</span><span class="field-type">INTEGER</span></div>
+      </div>
+      <div class="card-rationale">
+        <strong>Why this table?</strong>
+        Your <code>save_relevant_evidence</code> tool currently loses data — it just returns a string. This table is the permanent, queryable store for every log line the agent chose as proof. The <code>sequence_order</code> field preserves the causal chain (slow query → pool exhausted → OOMKilled).
+      </div>
+    </div>
+
+    <!-- 3. RAW_LOGS -->
+    <div class="table-card" style="--card-accent: #ff4081;">
+      <div class="card-header">
+        <div class="card-icon">📄</div>
+        <span class="card-title">raw_logs</span>
+        <span class="card-badge">Input Archive</span>
+      </div>
+      <div class="card-fields">
+        <div class="field-row"><span class="field-icon">🔑</span><span class="field-name pk">id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="field-row"><span class="field-icon">🔗</span><span class="field-name fk">incident_id</span><span class="field-type">FK → incidents</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">app_logs</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">database_logs</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">infrastructure_logs</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">monitoring_logs</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">security_logs</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">created_at</span><span class="field-type">TIMESTAMPTZ</span></div>
+      </div>
+      <div class="card-rationale">
+        <strong>Why this table?</strong>
+        Archives the exact raw log batch that triggered analysis. Critical for audits, reproducibility, and rerunning the agent on the same input if the first analysis was wrong. You never want to lose the original evidence.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROW 2: Operational tables -->
+  <div class="section-label" style="margin-top:36px;">Operations & Context</div>
+  <div class="schema-grid">
+
+    <!-- 4. RECOVERY_STEPS -->
+    <div class="table-card" style="--card-accent: #ffab40;">
+      <div class="card-header">
+        <div class="card-icon">🔧</div>
+        <span class="card-title">recovery_steps</span>
+        <span class="card-badge">Remediation</span>
+      </div>
+      <div class="card-fields">
+        <div class="field-row"><span class="field-icon">🔑</span><span class="field-name pk">id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="field-row"><span class="field-icon">🔗</span><span class="field-name fk">incident_id</span><span class="field-type">FK → incidents</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">step_order</span><span class="field-type">INTEGER</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">step_description</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">step_type</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">status</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">risk_level</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">is_automated</span><span class="field-type">BOOLEAN</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">automation_script</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">execution_result</span><span class="field-type">TEXT</span></div>
+      </div>
+      <div class="card-rationale">
+        <strong>Why this table?</strong>
+        Breaks the recovery plan from a monolithic text blob into individually trackable, executable steps. Enables future automation (execute step → mark COMPLETED) and lets humans approve/reject individual risky steps without blocking the whole plan.
+      </div>
+    </div>
+
+    <!-- 5. SERVICES -->
+    <div class="table-card" style="--card-accent: #00e5ff;">
+      <div class="card-header">
+        <div class="card-icon">⚙️</div>
+        <span class="card-title">services</span>
+        <span class="card-badge">Registry</span>
+      </div>
+      <div class="card-fields">
+        <div class="field-row"><span class="field-icon">🔑</span><span class="field-name pk">id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">service_name</span><span class="field-type">VARCHAR UNIQUE</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">app_id</span><span class="field-type">VARCHAR UNIQUE</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">service_type</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">criticality</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">team_owner</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">max_latency_ms</span><span class="field-type">INTEGER</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">max_error_rate_percent</span><span class="field-type">FLOAT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">db_max_connections</span><span class="field-type">INTEGER</span></div>
+      </div>
+      <div class="card-rationale">
+        <strong>Why this table?</strong>
+        The agent currently hard-codes thresholds in its prompt. This table externalizes those SLO thresholds per service so the agent can query them dynamically: "Is 1400ms high for <em>this</em> service?" It also tells the agent who to notify and how critical a degradation really is.
+      </div>
+    </div>
+
+    <!-- 6. INCIDENT_METRICS -->
+    <div class="table-card" style="--card-accent: #7c4dff;">
+      <div class="card-header">
+        <div class="card-icon">📊</div>
+        <span class="card-title">incident_metrics</span>
+        <span class="card-badge">Impact</span>
+      </div>
+      <div class="card-fields">
+        <div class="field-row"><span class="field-icon">🔑</span><span class="field-name pk">id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="field-row"><span class="field-icon">🔗</span><span class="field-name fk">incident_id</span><span class="field-type">FK → incidents</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">affected_users_count</span><span class="field-type">INTEGER</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">revenue_impact_usd</span><span class="field-type">DECIMAL</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">avg_latency_ms</span><span class="field-type">INTEGER</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">peak_latency_ms</span><span class="field-type">INTEGER</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">error_rate_percent</span><span class="field-type">FLOAT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">memory_usage_percent</span><span class="field-type">FLOAT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">detection_time_seconds</span><span class="field-type">INTEGER</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">resolution_time_seconds</span><span class="field-type">INTEGER</span></div>
+      </div>
+      <div class="card-rationale">
+        <strong>Why this table?</strong>
+        Separates business impact data from the incident record itself. Lets you answer: "How much did this cost? How fast did we fix it?" — the numbers that matter to management. Also feeds the <code>knowledge_base</code> with real resolution time data.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROW 3: Intelligence tables -->
+  <div class="section-label" style="margin-top:36px;">Intelligence & Learning</div>
+  <div class="schema-grid two-col">
+
+    <!-- 7. SIMILAR_INCIDENTS -->
+    <div class="table-card" style="--card-accent: #69ff47;">
+      <div class="card-header">
+        <div class="card-icon">🔁</div>
+        <span class="card-title">similar_incidents</span>
+        <span class="card-badge">Pattern Match</span>
+      </div>
+      <div class="card-fields">
+        <div class="field-row"><span class="field-icon">🔑</span><span class="field-name pk">id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="field-row"><span class="field-icon">🔗</span><span class="field-name fk">incident_id</span><span class="field-type">FK → incidents</span></div>
+        <div class="field-row"><span class="field-icon">🔗</span><span class="field-name fk">similar_incident_id</span><span class="field-type">FK → incidents</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">similarity_score</span><span class="field-type">FLOAT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">matching_criteria</span><span class="field-type">JSONB</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">created_at</span><span class="field-type">TIMESTAMPTZ</span></div>
+      </div>
+      <div class="card-rationale">
+        <strong>Why this table?</strong>
+        A self-referencing join table that links incidents to their historical twins. When a new incident arrives, the agent can query: "Has this happened before? What fixed it?" — dramatically reducing MTTR over time. The <code>JSONB matching_criteria</code> stores why they're similar (same error category, same service, same log patterns).
+      </div>
+    </div>
+
+    <!-- 8. AGENT_ACTIONS -->
+    <div class="table-card" style="--card-accent: #ff4081;">
+      <div class="card-header">
+        <div class="card-icon">🤖</div>
+        <span class="card-title">agent_actions</span>
+        <span class="card-badge">Audit Trail</span>
+      </div>
+      <div class="card-fields">
+        <div class="field-row"><span class="field-icon">🔑</span><span class="field-name pk">id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="field-row"><span class="field-icon">🔗</span><span class="field-name fk">incident_id</span><span class="field-type">FK → incidents</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">action_type</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">tool_name</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">input_params</span><span class="field-type">JSONB</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">output_result</span><span class="field-type">JSONB</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">execution_time_ms</span><span class="field-type">INTEGER</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">success</span><span class="field-type">BOOLEAN</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">error_message</span><span class="field-type">TEXT</span></div>
+      </div>
+      <div class="card-rationale">
+        <strong>Why this table?</strong>
+        Every ReAct loop step logged — tool called, what it received, what it returned, how long it took. This is non-negotiable for production AI. If the agent makes a wrong call or loops unnecessarily, you can replay and debug the exact thought chain. Also exposes cost: how many tool calls per incident?
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROW 4: Learning tables -->
+  <div class="schema-grid two-col" style="margin-top: 24px;">
+
+    <!-- 9. KNOWLEDGE_BASE -->
+    <div class="table-card" style="--card-accent: #ffab40;">
+      <div class="card-header">
+        <div class="card-icon">🧠</div>
+        <span class="card-title">knowledge_base</span>
+        <span class="card-badge">Long-Term Memory</span>
+      </div>
+      <div class="card-fields">
+        <div class="field-row"><span class="field-icon">🔑</span><span class="field-name pk">id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">error_pattern</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">symptom_keywords</span><span class="field-type">TEXT[]</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">affected_services</span><span class="field-type">VARCHAR[]</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">recommended_solution</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">success_rate</span><span class="field-type">FLOAT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">avg_resolution_time_minutes</span><span class="field-type">INTEGER</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">times_used</span><span class="field-type">INTEGER</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">created_from_incident_id</span><span class="field-type">VARCHAR</span></div>
+      </div>
+      <div class="card-rationale">
+        <strong>Why this table?</strong>
+        The agent's long-term memory that survives between sessions. Gemini forgets everything after a run — this table doesn't. When ConnectionPoolExhausted happens for the 5th time, the agent should already know the fix. Uses PostgreSQL's <code>GIN</code> index on the keywords array for fast pattern matching.
+      </div>
+    </div>
+
+    <!-- 10. HUMAN_FEEDBACK -->
+    <div class="table-card" style="--card-accent: #00e5ff;">
+      <div class="card-header">
+        <div class="card-icon">👤</div>
+        <span class="card-title">human_feedback</span>
+        <span class="card-badge">HITL Loop</span>
+      </div>
+      <div class="card-fields">
+        <div class="field-row"><span class="field-icon">🔑</span><span class="field-name pk">id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="field-row"><span class="field-icon">🔗</span><span class="field-name fk">incident_id</span><span class="field-type">FK → incidents</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">feedback_type</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">feedback_text</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">original_recovery_plan</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">modified_recovery_plan</span><span class="field-type">TEXT</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">agent_accuracy_rating</span><span class="field-type">INTEGER (1–5)</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">provided_by</span><span class="field-type">VARCHAR</span></div>
+        <div class="field-row"><span class="field-icon">·</span><span class="field-name">provided_at</span><span class="field-type">TIMESTAMPTZ</span></div>
+      </div>
+      <div class="card-rationale">
+        <strong>Why this table?</strong>
+        Closes the Human-in-the-Loop cycle. When an SRE approves, rejects, or modifies a recovery plan, that feedback is gold. It captures: was the agent right? What did the human change? Over time, these diffs train better prompts and update the <code>knowledge_base</code> with battle-tested solutions.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── ENTITY RELATIONSHIP DIAGRAM ── -->
+  <div class="relations-section">
+    <div class="section-label">Entity Relationship Map</div>
+    <div class="relations-box">
+      <svg class="relations-svg" viewBox="0 0 1100 480">
+        <defs>
+          <marker id="arrow-cyan" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#00e5ff" opacity="0.7"/>
+          </marker>
+          <marker id="arrow-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#7c4dff" opacity="0.7"/>
+          </marker>
+          <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#69ff47" opacity="0.7"/>
+          </marker>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- CENTRAL: incidents -->
+        <rect x="430" y="180" width="160" height="52" rx="10" fill="#0d1320" stroke="#00e5ff" stroke-width="2" filter="url(#glow)"/>
+        <text x="510" y="200" text-anchor="middle" fill="#00e5ff" font-family="JetBrains Mono" font-size="11" font-weight="700">incidents</text>
+        <text x="510" y="218" text-anchor="middle" fill="#4a5880" font-family="JetBrains Mono" font-size="9">Core Hub</text>
+        <text x="510" y="232" text-anchor="middle" fill="#4a5880" font-family="JetBrains Mono" font-size="9">incident_id PK</text>
+
+        <!-- TOP ROW: services, raw_logs -->
+        <rect x="80"  y="40" width="150" height="48" rx="10" fill="#0d1320" stroke="#00e5ff" stroke-width="1.5"/>
+        <text x="155" y="60" text-anchor="middle" fill="#00e5ff" font-family="JetBrains Mono" font-size="11" font-weight="700">services</text>
+        <text x="155" y="78" text-anchor="middle" fill="#4a5880" font-family="JetBrains Mono" font-size="9">SLO Thresholds</text>
+
+        <rect x="820" y="40" width="150" height="48" rx="10" fill="#0d1320" stroke="#ff4081" stroke-width="1.5"/>
+        <text x="895" y="60" text-anchor="middle" fill="#ff4081" font-family="JetBrains Mono" font-size="11" font-weight="700">raw_logs</text>
+        <text x="895" y="78" text-anchor="middle" fill="#4a5880" font-family="JetBrains Mono" font-size="9">Input Archive</text>
+
+        <!-- LEFT COLUMN: evidence, agent_actions -->
+        <rect x="30"  y="185" width="155" height="48" rx="10" fill="#0d1320" stroke="#69ff47" stroke-width="1.5"/>
+        <text x="108" y="205" text-anchor="middle" fill="#69ff47" font-family="JetBrains Mono" font-size="11" font-weight="700">evidence</text>
+        <text x="108" y="223" text-anchor="middle" fill="#4a5880" font-family="JetBrains Mono" font-size="9">Causal Chain</text>
+
+        <rect x="30"  y="350" width="155" height="48" rx="10" fill="#0d1320" stroke="#ff4081" stroke-width="1.5"/>
+        <text x="108" y="370" text-anchor="middle" fill="#ff4081" font-family="JetBrains Mono" font-size="11" font-weight="700">agent_actions</text>
+        <text x="108" y="388" text-anchor="middle" fill="#4a5880" font-family="JetBrains Mono" font-size="9">Audit Trail</text>
+
+        <!-- RIGHT COLUMN: incident_metrics, human_feedback -->
+        <rect x="870" y="185" width="160" height="48" rx="10" fill="#0d1320" stroke="#7c4dff" stroke-width="1.5"/>
+        <text x="950" y="205" text-anchor="middle" fill="#7c4dff" font-family="JetBrains Mono" font-size="11" font-weight="700">incident_metrics</text>
+        <text x="950" y="223" text-anchor="middle" fill="#4a5880" font-family="JetBrains Mono" font-size="9">Business Impact</text>
+
+        <rect x="870" y="350" width="160" height="48" rx="10" fill="#0d1320" stroke="#00e5ff" stroke-width="1.5"/>
+        <text x="950" y="370" text-anchor="middle" fill="#00e5ff" font-family="JetBrains Mono" font-size="11" font-weight="700">human_feedback</text>
+        <text x="950" y="388" text-anchor="middle" fill="#4a5880" font-family="JetBrains Mono" font-size="9">HITL Loop</text>
+
+        <!-- BOTTOM ROW: recovery_steps, similar_incidents, knowledge_base -->
+        <rect x="220" y="370" width="155" height="48" rx="10" fill="#0d1320" stroke="#ffab40" stroke-width="1.5"/>
+        <text x="298" y="390" text-anchor="middle" fill="#ffab40" font-family="JetBrains Mono" font-size="11" font-weight="700">recovery_steps</text>
+        <text x="298" y="408" text-anchor="middle" fill="#4a5880" font-family="JetBrains Mono" font-size="9">Step Tracker</text>
+
+        <rect x="430" y="380" width="160" height="48" rx="10" fill="#0d1320" stroke="#69ff47" stroke-width="1.5"/>
+        <text x="510" y="400" text-anchor="middle" fill="#69ff47" font-family="JetBrains Mono" font-size="11" font-weight="700">similar_incidents</text>
+        <text x="510" y="418" text-anchor="middle" fill="#4a5880" font-family="JetBrains Mono" font-size="9">Pattern Match</text>
+
+        <rect x="640" y="370" width="155" height="48" rx="10" fill="#0d1320" stroke="#ffab40" stroke-width="1.5"/>
+        <text x="718" y="390" text-anchor="middle" fill="#ffab40" font-family="JetBrains Mono" font-size="11" font-weight="700">knowledge_base</text>
+        <text x="718" y="408" text-anchor="middle" fill="#4a5880" font-family="JetBrains Mono" font-size="9">Long Memory</text>
+
+        <!-- ── EDGES (FK lines) ── -->
+        <!-- services → incidents (context) -->
+        <line x1="230" y1="64" x2="430" y2="196" stroke="#00e5ff" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.5" marker-end="url(#arrow-cyan)"/>
+        <text x="295" y="118" fill="#4a5880" font-family="JetBrains Mono" font-size="8">app_id ref</text>
+
+        <!-- raw_logs → incidents -->
+        <line x1="820" y1="64" x2="590" y2="196" stroke="#ff4081" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.5" marker-end="url(#arrow-cyan)"/>
+        <text x="700" y="118" fill="#4a5880" font-family="JetBrains Mono" font-size="8">FK</text>
+
+        <!-- evidence → incidents -->
+        <line x1="185" y1="209" x2="430" y2="206" stroke="#69ff47" stroke-width="1.5" opacity="0.7" marker-end="url(#arrow-green)"/>
+        <text x="290" y="199" fill="#69ff47" font-family="JetBrains Mono" font-size="8">incident_id FK</text>
+
+        <!-- agent_actions → incidents -->
+        <line x1="155" y1="350" x2="460" y2="232" stroke="#ff4081" stroke-width="1.2" opacity="0.6" marker-end="url(#arrow-cyan)"/>
+        <text x="240" y="310" fill="#4a5880" font-family="JetBrains Mono" font-size="8">FK</text>
+
+        <!-- incident_metrics → incidents -->
+        <line x1="870" y1="209" x2="590" y2="206" stroke="#7c4dff" stroke-width="1.5" opacity="0.7" marker-end="url(#arrow-purple)"/>
+        <text x="710" y="199" fill="#7c4dff" font-family="JetBrains Mono" font-size="8">incident_id FK</text>
+
+        <!-- human_feedback → incidents -->
+        <line x1="900" y1="350" x2="570" y2="232" stroke="#00e5ff" stroke-width="1.2" opacity="0.6" marker-end="url(#arrow-cyan)"/>
+        <text x="770" y="310" fill="#4a5880" font-family="JetBrains Mono" font-size="8">FK</text>
+
+        <!-- recovery_steps → incidents -->
+        <line x1="350" y1="370" x2="490" y2="232" stroke="#ffab40" stroke-width="1.5" opacity="0.7" marker-end="url(#arrow-cyan)"/>
+        <text x="395" y="310" fill="#ffab40" font-family="JetBrains Mono" font-size="8">incident_id FK</text>
+
+        <!-- similar_incidents → incidents (two arrows self-ref) -->
+        <line x1="510" y1="380" x2="510" y2="232" stroke="#69ff47" stroke-width="1.5" opacity="0.7" marker-end="url(#arrow-green)"/>
+        <text x="516" y="320" fill="#69ff47" font-family="JetBrains Mono" font-size="8">self-ref</text>
+
+        <!-- knowledge_base ← human_feedback (learning) -->
+        <line x1="718" y1="370" x2="718" y2="320" stroke="#ffab40" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+        <line x1="718" y1="320" x2="870" y2="374" stroke="#ffab40" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+        <text x="766" y="348" fill="#4a5880" font-family="JetBrains Mono" font-size="7.5">feeds</text>
+
+        <!-- Cardinality labels -->
+        <text x="188" y="208" fill="#69ff47" font-family="JetBrains Mono" font-size="9" font-weight="700">1</text>
+        <text x="422" y="208" fill="#69ff47" font-family="JetBrains Mono" font-size="9" font-weight="700">N</text>
+        <text x="594" y="208" fill="#7c4dff" font-family="JetBrains Mono" font-size="9" font-weight="700">N</text>
+        <text x="862" y="208" fill="#7c4dff" font-family="JetBrains Mono" font-size="9" font-weight="700">1</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ── AGENT WORKFLOW MAPPING ── -->
+  <div class="agent-flow">
+    <div class="section-label" style="margin-top: 48px;">ReAct Loop → Table Mapping</div>
+    <div class="flow-grid">
+      <div class="flow-step">
+        <span class="flow-step-num">01</span>
+        <div class="flow-step-icon">📥</div>
+        <div class="flow-step-title">Log Batch Received</div>
+        <p>Agent receives raw JSON with app, db, infra, monitoring logs. Archived immediately.</p>
+        <div class="flow-step-tables">
+          <span class="flow-table-tag">raw_logs</span>
+          <span class="flow-table-tag">incidents</span>
+          <span class="flow-table-tag">services</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <span class="flow-step-num">02</span>
+        <div class="flow-step-icon">🔍</div>
+        <div class="flow-step-title">Evidence Collection</div>
+        <p>save_relevant_evidence tool fires. Each log line + reasoning written to DB.</p>
+        <div class="flow-step-tables">
+          <span class="flow-table-tag" style="color:#69ff47;border-color:rgba(105,255,71,0.3);background:rgba(105,255,71,0.1)">evidence</span>
+          <span class="flow-table-tag" style="color:#ff4081;border-color:rgba(255,64,129,0.3);background:rgba(255,64,129,0.1)">agent_actions</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <span class="flow-step-num">03</span>
+        <div class="flow-step-icon">⚡</div>
+        <div class="flow-step-title">Risk Calculation</div>
+        <p>calculate_risk_score evaluates plan. Checks knowledge_base for similar past incidents.</p>
+        <div class="flow-step-tables">
+          <span class="flow-table-tag" style="color:#7c4dff;border-color:rgba(124,77,255,0.3);background:rgba(124,77,255,0.1)">knowledge_base</span>
+          <span class="flow-table-tag" style="color:#69ff47;border-color:rgba(105,255,71,0.3);background:rgba(105,255,71,0.1)">similar_incidents</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <span class="flow-step-num">04</span>
+        <div class="flow-step-icon">🎫</div>
+        <div class="flow-step-title">Ticket Created</div>
+        <p>create_itsm_ticket writes final record. Steps broken out. Metrics logged.</p>
+        <div class="flow-step-tables">
+          <span class="flow-table-tag" style="color:#ffab40;border-color:rgba(255,171,64,0.3);background:rgba(255,171,64,0.1)">recovery_steps</span>
+          <span class="flow-table-tag" style="color:#7c4dff;border-color:rgba(124,77,255,0.3);background:rgba(124,77,255,0.1)">incident_metrics</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <span class="flow-step-num">05</span>
+        <div class="flow-step-icon">👤</div>
+        <div class="flow-step-title">Human Approval</div>
+        <p>SRE reviews high-risk ticket. Approves, rejects, or modifies. Diff saved for learning.</p>
+        <div class="flow-step-tables">
+          <span class="flow-table-tag">human_feedback</span>
+          <span class="flow-table-tag" style="color:#ffab40;border-color:rgba(255,171,64,0.3);background:rgba(255,171,64,0.1)">knowledge_base</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>
