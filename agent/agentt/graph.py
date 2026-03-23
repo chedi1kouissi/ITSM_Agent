@@ -1,15 +1,25 @@
 import os
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage
+from langchain_core.tools import StructuredTool
+from typing import List, Dict, Any
 
-# Import our custom modules
 from agentt.state import AgentState
-from agentt.tools import create_incident_with_evidence, calculate_risk_score, finalize_itsm_ticket
+from agentt.mcp_server.server import (
+    initialize_incident,
+    add_evidence,
+    add_recovery_steps,
+    calculate_risk_score,
+    log_agent_action,
+    finalize_incident,
+    get_service_dependencies,
+    get_blast_radius,
+    get_infrastructure_routes,
+)
 
-# Load Environment Variables
 load_dotenv()
 
 # 1. Initialize Gemini
@@ -18,73 +28,194 @@ llm = ChatGoogleGenerativeAI(
     temperature=0.4
 )
 
-# 2. Bind Tools to the LLM
-tools = [create_incident_with_evidence, calculate_risk_score, finalize_itsm_ticket]
+# 2. Unwrap raw functions from FastMCP's FunctionTool wrapper
+_initialize_incident_fn = initialize_incident.fn
+_add_evidence_fn = add_evidence.fn
+_add_recovery_steps_fn = add_recovery_steps.fn
+_calculate_risk_score_fn = calculate_risk_score.fn
+_log_agent_action_fn = log_agent_action.fn
+_finalize_incident_fn = finalize_incident.fn
+_get_service_dependencies_fn = get_service_dependencies.fn
+_get_blast_radius_fn = get_blast_radius.fn
+_get_infrastructure_routes_fn = get_infrastructure_routes.fn
+
+# 3. Plain Python wrappers (callable by LangChain)
+def _initialize_incident(incident_id: str, app_id: str = "", initial_summary: str = "") -> str:
+    return _initialize_incident_fn(incident_id=incident_id, app_id=app_id, initial_summary=initial_summary)
+
+def _get_service_dependencies(app_id: str) -> str:
+    return _get_service_dependencies_fn(app_id=app_id)
+
+def _get_blast_radius(resource_id: str) -> str:
+    return _get_blast_radius_fn(resource_id=resource_id)
+
+def _get_infrastructure_routes(app_id: str) -> str:
+    return _get_infrastructure_routes_fn(app_id=app_id)
+
+def _add_evidence(incident_id: str, evidence_items: List[Dict[str, Any]]) -> str:
+    return _add_evidence_fn(incident_id=incident_id, evidence_items=evidence_items)
+
+def _add_recovery_steps(incident_id: str, steps: List[Dict[str, Any]]) -> str:
+    return _add_recovery_steps_fn(incident_id=incident_id, steps=steps)
+
+def _calculate_risk_score(plan_text: str) -> int:
+    return _calculate_risk_score_fn(plan_text=plan_text)
+
+def _log_agent_action(
+    incident_id: str,
+    action_type: str,
+    input_params: Dict[str, Any],
+    output_result: Dict[str, Any],
+    reasoning: str = "",
+    observation: str = "",
+    app_id: str = ""
+) -> str:
+    return _log_agent_action_fn(
+        incident_id=incident_id,
+        action_type=action_type,
+        input_params=input_params,
+        output_result=output_result,
+        reasoning=reasoning,
+        observation=observation,
+        app_id=app_id
+    )
+
+def _finalize_incident(
+    incident_id: str,
+    recovery_plan: str,
+    risk_score: int,
+    agent_notes: str,
+    app_id: str = ""
+) -> str:
+    return _finalize_incident_fn(
+        incident_id=incident_id,
+        recovery_plan=recovery_plan,
+        risk_score=risk_score,
+        agent_notes=agent_notes,
+        app_id=app_id
+    )
+
+# 4. Wrap as LangChain StructuredTools
+tools = [
+    StructuredTool.from_function(
+        func=_initialize_incident,
+        name="initialize_incident",
+        description="Creates a new incident record with ANALYZING status. Call this FIRST before any other tool."
+    ),
+    StructuredTool.from_function(
+        func=_get_service_dependencies,
+        name="get_service_dependencies",
+        description=(
+            "Fetches the 2-hop service dependency map for an app from Neo4j. "
+            "Returns node types (Service/Database/Infrastructure), relationship types, and edge properties "
+            "(pool_size, latency_slo_ms, use_case). Call this right after initialize_incident."
+        )
+    ),
+    StructuredTool.from_function(
+        func=_get_blast_radius,
+        name="get_blast_radius",
+        description=(
+            "Given a suspected failing resource ID (e.g. 'payment-db', 'redis-cache'), returns ALL services "
+            "across ALL apps that depend on it. Use this when a shared DB or infra node is the suspected root cause."
+        )
+    ),
+    StructuredTool.from_function(
+        func=_get_infrastructure_routes,
+        name="get_infrastructure_routes",
+        description=(
+            "Returns the infrastructure (gateways, load balancers) routing traffic into this app's services. "
+            "Use this when logs show 502/504 errors or gateway timeouts."
+        )
+    ),
+    StructuredTool.from_function(
+        func=_add_evidence,
+        name="add_evidence",
+        description="Adds evidence log lines to an existing incident. evidence_items: list of dicts with keys: log_line, source (app/db/infra/monitoring), timestamp (ISO string), reasoning."
+    ),
+    StructuredTool.from_function(
+        func=_add_recovery_steps,
+        name="add_recovery_steps",
+        description="Saves recovery steps to an existing incident. steps: list of dicts with keys: step_order (int), step_description, risk_level (HIGH/MEDIUM/LOW)."
+    ),
+    StructuredTool.from_function(
+        func=_calculate_risk_score,
+        name="calculate_risk_score",
+        description="Calculates risk score (0-100) for a recovery plan based on dangerous keywords. Pass the full plan text."
+    ),
+    StructuredTool.from_function(
+        func=_log_agent_action,
+        name="log_agent_action",
+        description="Logs an agent action for audit purposes. Use for significant intermediate reasoning steps or external lookups."
+    ),
+    StructuredTool.from_function(
+        func=_finalize_incident,
+        name="finalize_incident",
+        description="Finalizes the incident ticket, sets status to OPEN. Call this LAST after evidence and recovery steps are saved."
+    ),
+]
+
+# 5. Bind tools to LLM
 llm_with_tools = llm.bind_tools(tools)
 
-# 3. Define the System Prompt
-SYSTEM_PROMPT = """You are an expert SRE Agent. Your job is to analyze logs, find the root cause, and create a ticket.
+# 6. System Prompt
+SYSTEM_PROMPT = """You are an expert SRE Agent. Your job is to analyze logs, cross-reference them with system topology, find the root cause, and create a ticket.
 
 ### WORKFLOW (MUST FOLLOW IN ORDER):
-1. **Create Incident + Save Evidence FIRST**: 
-   - Use `create_incident_with_evidence(incident_id, evidence_items, initial_summary)` as your FIRST action
-   - This creates the incident AND saves all relevant log lines that prove the root cause
-   - evidence_items format: [{"log_line": "...", "source": "app/db/infra/monitoring", "timestamp": "...", "reasoning": "..."}]
-   - The incident_id will be provided to you in the input
 
-2. **Analyze & Create Recovery Plan**: 
-   - Based on the evidence, formulate a detailed recovery plan
-   - Your plan should be specific, actionable, and safe
+1. **Initialize Incident**:
+   - Call `initialize_incident(incident_id, app_id, initial_summary)` FIRST.
 
-3. **Calculate Risk Score**: 
-   - Use `calculate_risk_score(plan_text)` to evaluate the risk level (0-100) of your recovery plan
+2. **Understand the Architecture** (use all 3 graph tools, in this order):
+   a. `get_service_dependencies(app_id)` — maps the full 2-hop dependency chain. Identifies which databases, caches, and queues each service relies on, plus edge properties like pool_size and latency SLOs.
+   b. `get_blast_radius(resource_id)` — call this for any resource that looks like a root cause (e.g. a saturated DB or a failing cache). Returns all services across ALL apps affected by it.
+   c. `get_infrastructure_routes(app_id)` — call this if the logs show 502/504 errors or gateway timeouts. Maps which gateways sit in front of each service.
 
-4. **Finalize Ticket**: 
-   - Use `finalize_itsm_ticket(incident_id, recovery_plan, risk_score, agent_notes)` to complete the ticket
-   - agent_notes should contain your analysis summary and reasoning
+3. **Save Evidence**:
+   - Call `add_evidence(incident_id, evidence_items)` with all relevant log lines.
+   - The log entries include a `service_id` field that maps directly to node IDs in the graph — use this to cite graph context in your reasoning field.
+   - Include ALL log lines that form the causal chain.
+
+4. **Analyze & Create Recovery Plan**:
+   - Use the topology to make the plan precise (e.g. reference the specific pool_size, max_conn, or timeout_ms from the graph).
+   - Call `add_recovery_steps(incident_id, steps)` with ordered, actionable steps.
+
+5. **Calculate Risk Score**:
+   - Call `calculate_risk_score(plan_text)` on the full plan text.
+
+6. **Finalize Ticket**:
+   - Call `finalize_incident(incident_id, recovery_plan, risk_score, agent_notes, app_id)` LAST.
+   - Use the SAME incident_id and app_id throughout.
 
 ### LOG FORMAT:
-The logs are provided as a JSON object with 'app_logs', 'database_logs', etc. Cross-reference timestamps to find the causal chain!
+Logs are structured JSON arrays with fields: timestamp, level, service_id, message, metadata.
+The `service_id` field maps directly to node IDs in Neo4j — use it to run graph lookups.
 
 ### IMPORTANT:
-- You MUST call `create_incident_with_evidence` BEFORE `finalize_itsm_ticket`
-- Use the SAME incident_id for all tool calls
-- Be thorough in identifying evidence - include all relevant log lines
+- ALWAYS call `initialize_incident` first.
+- ALWAYS call `get_service_dependencies` after initialization.
+- Use `get_blast_radius` whenever a shared resource (DB, cache, queue) is suspected.
+- Use `get_infrastructure_routes` whenever infra/gateway errors appear in the logs.
+- Use `log_agent_action` for significant intermediate reasoning steps.
 """
 
-# 4. Define the Node: "Reasoning"
+# 7. Agent Node
 def agent_node(state: AgentState):
     messages = state["messages"]
-    
-    # If this is the first step, add the System Prompt
-    if len(messages) == 0:
-        messages = [SystemMessage(content=SYSTEM_PROMPT)]
-    
-    # Invoke Gemini
+
+    if not messages or not isinstance(messages[0], SystemMessage):
+        messages = [SystemMessage(content=SYSTEM_PROMPT)] + list(messages)
+
     response = llm_with_tools.invoke(messages)
-    
-    # Return the new message to update the state
     return {"messages": [response]}
 
-# 5. Build the Graph
+# 8. Build the Graph
 workflow = StateGraph(AgentState)
 
-# Add Nodes
 workflow.add_node("agent", agent_node)
 workflow.add_node("tools", ToolNode(tools))
 
-# Add Edges
 workflow.set_entry_point("agent")
-
-# conditional_edges checks: Did the agent call a tool? 
-# If YES -> go to "tools". If NO -> go to END.
-workflow.add_conditional_edges(
-    "agent",
-    tools_condition,
-)
-
-# From "tools" always go back to "agent" (to read the tool output)
+workflow.add_conditional_edges("agent", tools_condition)
 workflow.add_edge("tools", "agent")
 
-# Compile the graph
 app = workflow.compile()

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CL-01 — Database Schema</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1923;
+    --paper: #f8f6f1;
+    --cream: #eeeae0;
+    --blue: #1a3a5c;
+    --accent: #c84b2f;
+    --gold: #c9952a;
+    --muted: #6b7280;
+    --border: #ddd8cc;
+    --green: #2d6a4f;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    width: 1400px;
+    min-height: 900px;
+    padding: 48px 56px;
+    overflow: hidden;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .eyebrow { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .page-header h1 { font-family: 'DM Serif Display', serif; font-size: 2.2rem; color: var(--blue); line-height: 1.1; }
+  .page-num-large { font-family: 'DM Serif Display', serif; font-size: 3rem; color: var(--border); line-height: 1; }
+  .page-meta { text-align: right; font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); line-height: 1.8; }
+
+  /* TABLES GRID */
+  .schema-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .table-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .table-card-header {
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid var(--cream);
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .table-card-header-bar {
+    width: 100%;
+    height: 3px;
+    border-radius: 2px;
+    position: absolute;
+    top: 0; left: 0;
+  }
+  .tc-icon { font-size: 0.95rem; }
+  .tc-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--blue);
+  }
+  .tc-badge {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.55rem;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: rgba(26,58,92,0.08);
+    color: var(--blue);
+  }
+
+  .tc-fields {
+    padding: 6px 0;
+  }
+  .tc-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 12px;
+    font-size: 0.65rem;
+  }
+  .tc-field:nth-child(even) { background: rgba(0,0,0,0.015); }
+  .f-icon { font-size: 0.55rem; color: var(--muted); width: 10px; flex-shrink: 0; }
+  .f-name { flex: 1; font-family: 'DM Mono', monospace; color: var(--ink); }
+  .f-name.pk { color: var(--gold); font-weight: 700; }
+  .f-name.fk { color: var(--blue); }
+  .f-type { font-size: 0.58rem; color: var(--muted); background: var(--cream); padding: 1px 5px; border-radius: 3px; font-family: 'DM Mono', monospace; }
+
+  /* ERD */
+  .erd-section {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .erd-section h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1rem;
+    color: var(--blue);
+    margin-bottom: 16px;
+  }
+
+  svg.erd { width: 100%; height: 200px; display: block; }
+
+  /* LEGEND ROW */
+  .legend-row {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+    justify-content: center;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .legend-line-pk { width: 20px; height: 2px; background: var(--gold); }
+  .legend-line-fk { width: 20px; height: 2px; background: var(--blue); border-top: 2px dashed var(--blue); }
+
+  /* BOTTOM STATS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  .stat-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+    border-top: 3px solid var(--card-color, var(--blue));
+  }
+  .stat-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.8rem;
+    color: var(--card-color, var(--blue));
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label { font-size: 0.68rem; color: var(--muted); }
+
+  .page-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 12px; border-top: 1px solid var(--border); margin-top: 16px;
+  }
+  .page-footer span { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); letter-spacing: 0.1em; }
+  .page-num { font-family: 'DM Serif Display', serif; font-size: 1.2rem; color: var(--border); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">06 — Database Schema</div>
+    <h1>PostgreSQL Schema<br>10 Tables · Production Design</h1>
+  </div>
+  <div class="page-meta">
+    <div class="page-num-large">06</div>
+    <div>CL-01 · ITSM AUTOMATION</div>
+  </div>
+</div>
+
+<!-- ROW 1: 5 tables -->
+<div class="schema-grid">
+
+  <!-- incidents -->
+  <div class="table-card">
+    <div class="table-card-header" style="border-top: 3px solid #1a3a5c;">
+      <span class="tc-icon">🎯</span>
+      <span class="tc-name">incidents</span>
+      <span class="tc-badge">Hub</span>
+    </div>
+    <div class="tc-fields">
+      <div class="tc-field"><span class="f-icon">🔑</span><span class="f-name pk">id</span><span class="f-type">SERIAL PK</span></div>
+      <div class="tc-field"><span class="f-icon">🔑</span><span class="f-name pk">incident_id</span><span class="f-type">VARCHAR UQ</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">app_id</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">status</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">severity</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">root_cause</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">risk_score</span><span class="f-type">INTEGER</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">recovery_plan</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">agent_notes</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">confidence_score</span><span class="f-type">FLOAT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">requires_approval</span><span class="f-type">BOOLEAN</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">created_at</span><span class="f-type">TIMESTAMPTZ</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">resolved_at</span><span class="f-type">TIMESTAMPTZ</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">approved_by</span><span class="f-type">VARCHAR</span></div>
+    </div>
+  </div>
+
+  <!-- evidence -->
+  <div class="table-card">
+    <div class="table-card-header" style="border-top: 3px solid #2d6a4f;">
+      <span class="tc-icon">🔍</span>
+      <span class="tc-name">evidence</span>
+      <span class="tc-badge">Agent Out</span>
+    </div>
+    <div class="tc-fields">
+      <div class="tc-field"><span class="f-icon">🔑</span><span class="f-name pk">id</span><span class="f-type">SERIAL PK</span></div>
+      <div class="tc-field"><span class="f-icon">🔗</span><span class="f-name fk">incident_id</span><span class="f-type">FK</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">log_line</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">source</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">timestamp</span><span class="f-type">TIMESTAMPTZ</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">reasoning</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">relevance_score</span><span class="f-type">FLOAT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">log_level</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">category</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">sequence_order</span><span class="f-type">INTEGER</span></div>
+    </div>
+  </div>
+
+  <!-- raw_logs -->
+  <div class="table-card">
+    <div class="table-card-header" style="border-top: 3px solid #c84b2f;">
+      <span class="tc-icon">📄</span>
+      <span class="tc-name">raw_logs</span>
+      <span class="tc-badge">Archive</span>
+    </div>
+    <div class="tc-fields">
+      <div class="tc-field"><span class="f-icon">🔑</span><span class="f-name pk">id</span><span class="f-type">SERIAL PK</span></div>
+      <div class="tc-field"><span class="f-icon">🔗</span><span class="f-name fk">incident_id</span><span class="f-type">FK</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">app_logs</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">database_logs</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">infra_logs</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">monitoring_logs</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">security_logs</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">created_at</span><span class="f-type">TIMESTAMPTZ</span></div>
+    </div>
+  </div>
+
+  <!-- recovery_steps -->
+  <div class="table-card">
+    <div class="table-card-header" style="border-top: 3px solid #c9952a;">
+      <span class="tc-icon">🔧</span>
+      <span class="tc-name">recovery_steps</span>
+      <span class="tc-badge">Remediation</span>
+    </div>
+    <div class="tc-fields">
+      <div class="tc-field"><span class="f-icon">🔑</span><span class="f-name pk">id</span><span class="f-type">SERIAL PK</span></div>
+      <div class="tc-field"><span class="f-icon">🔗</span><span class="f-name fk">incident_id</span><span class="f-type">FK</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">step_order</span><span class="f-type">INTEGER</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">step_description</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">step_type</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">status</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">risk_level</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">is_automated</span><span class="f-type">BOOLEAN</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">automation_script</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">execution_result</span><span class="f-type">TEXT</span></div>
+    </div>
+  </div>
+
+  <!-- services -->
+  <div class="table-card">
+    <div class="table-card-header" style="border-top: 3px solid #0e7490;">
+      <span class="tc-icon">⚙️</span>
+      <span class="tc-name">services</span>
+      <span class="tc-badge">Registry</span>
+    </div>
+    <div class="tc-fields">
+      <div class="tc-field"><span class="f-icon">🔑</span><span class="f-name pk">id</span><span class="f-type">SERIAL PK</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">service_name</span><span class="f-type">VARCHAR UQ</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">app_id</span><span class="f-type">VARCHAR UQ</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">service_type</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">criticality</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">team_owner</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">max_latency_ms</span><span class="f-type">INTEGER</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">max_error_rate_%</span><span class="f-type">FLOAT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">db_max_connections</span><span class="f-type">INTEGER</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ROW 2: 5 more tables -->
+<div class="schema-grid">
+
+  <!-- incident_metrics -->
+  <div class="table-card">
+    <div class="table-card-header" style="border-top: 3px solid #6b21a8;">
+      <span class="tc-icon">📊</span>
+      <span class="tc-name">incident_metrics</span>
+      <span class="tc-badge">Impact</span>
+    </div>
+    <div class="tc-fields">
+      <div class="tc-field"><span class="f-icon">🔑</span><span class="f-name pk">id</span><span class="f-type">SERIAL PK</span></div>
+      <div class="tc-field"><span class="f-icon">🔗</span><span class="f-name fk">incident_id</span><span class="f-type">FK</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">affected_users</span><span class="f-type">INTEGER</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">revenue_impact_usd</span><span class="f-type">DECIMAL</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">avg_latency_ms</span><span class="f-type">INTEGER</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">peak_latency_ms</span><span class="f-type">INTEGER</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">error_rate_%</span><span class="f-type">FLOAT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">memory_usage_%</span><span class="f-type">FLOAT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">detection_time_s</span><span class="f-type">INTEGER</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">resolution_time_s</span><span class="f-type">INTEGER</span></div>
+    </div>
+  </div>
+
+  <!-- agent_actions -->
+  <div class="table-card">
+    <div class="table-card-header" style="border-top: 3px solid #c84b2f;">
+      <span class="tc-icon">🤖</span>
+      <span class="tc-name">agent_actions</span>
+      <span class="tc-badge">Audit</span>
+    </div>
+    <div class="tc-fields">
+      <div class="tc-field"><span class="f-icon">🔑</span><span class="f-name pk">id</span><span class="f-type">SERIAL PK</span></div>
+      <div class="tc-field"><span class="f-icon">🔗</span><span class="f-name fk">incident_id</span><span class="f-type">FK</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">action_type</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">tool_name</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">input_params</span><span class="f-type">JSONB</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">output_result</span><span class="f-type">JSONB</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">execution_time_ms</span><span class="f-type">INTEGER</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">success</span><span class="f-type">BOOLEAN</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">error_message</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">agent_reasoning</span><span class="f-type">TEXT</span></div>
+    </div>
+  </div>
+
+  <!-- similar_incidents -->
+  <div class="table-card">
+    <div class="table-card-header" style="border-top: 3px solid #2d6a4f;">
+      <span class="tc-icon">🔁</span>
+      <span class="tc-name">similar_incidents</span>
+      <span class="tc-badge">Pattern</span>
+    </div>
+    <div class="tc-fields">
+      <div class="tc-field"><span class="f-icon">🔑</span><span class="f-name pk">id</span><span class="f-type">SERIAL PK</span></div>
+      <div class="tc-field"><span class="f-icon">🔗</span><span class="f-name fk">incident_id</span><span class="f-type">FK</span></div>
+      <div class="tc-field"><span class="f-icon">🔗</span><span class="f-name fk">similar_incident_id</span><span class="f-type">FK (self)</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">similarity_score</span><span class="f-type">FLOAT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">matching_criteria</span><span class="f-type">JSONB</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">created_at</span><span class="f-type">TIMESTAMPTZ</span></div>
+    </div>
+  </div>
+
+  <!-- knowledge_base -->
+  <div class="table-card">
+    <div class="table-card-header" style="border-top: 3px solid #c9952a;">
+      <span class="tc-icon">🧠</span>
+      <span class="tc-name">knowledge_base</span>
+      <span class="tc-badge">Memory</span>
+    </div>
+    <div class="tc-fields">
+      <div class="tc-field"><span class="f-icon">🔑</span><span class="f-name pk">id</span><span class="f-type">SERIAL PK</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">error_pattern</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">symptom_keywords</span><span class="f-type">TEXT[]</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">affected_services</span><span class="f-type">VARCHAR[]</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">recommended_sol.</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">success_rate</span><span class="f-type">FLOAT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">avg_resolution_min</span><span class="f-type">INTEGER</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">times_used</span><span class="f-type">INTEGER</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">from_incident_id</span><span class="f-type">VARCHAR</span></div>
+    </div>
+  </div>
+
+  <!-- human_feedback -->
+  <div class="table-card">
+    <div class="table-card-header" style="border-top: 3px solid #1a3a5c;">
+      <span class="tc-icon">👤</span>
+      <span class="tc-name">human_feedback</span>
+      <span class="tc-badge">HITL</span>
+    </div>
+    <div class="tc-fields">
+      <div class="tc-field"><span class="f-icon">🔑</span><span class="f-name pk">id</span><span class="f-type">SERIAL PK</span></div>
+      <div class="tc-field"><span class="f-icon">🔗</span><span class="f-name fk">incident_id</span><span class="f-type">FK</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">feedback_type</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">feedback_text</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">original_plan</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">modified_plan</span><span class="f-type">TEXT</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">accuracy_rating</span><span class="f-type">INT (1–5)</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">provided_by</span><span class="f-type">VARCHAR</span></div>
+      <div class="tc-field"><span class="f-icon">·</span><span class="f-name">provided_at</span><span class="f-type">TIMESTAMPTZ</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-card" style="--card-color: #1a3a5c;">
+    <div class="stat-num">10</div>
+    <div class="stat-label">Total Tables</div>
+  </div>
+  <div class="stat-card" style="--card-color: #c84b2f;">
+    <div class="stat-num">8</div>
+    <div class="stat-label">Foreign Keys</div>
+  </div>
+  <div class="stat-card" style="--card-color: #2d6a4f;">
+    <div class="stat-num">6</div>
+    <div class="stat-label">MCP Tools → DB</div>
+  </div>
+  <div class="stat-card" style="--card-color: #c9952a;">
+    <div class="stat-num">HITL</div>
+    <div class="stat-label">Learning Loop</div>
+  </div>
+  <div class="stat-card" style="--card-color: #6b21a8;">
+    <div class="stat-num">JSONB</div>
+    <div class="stat-label">Audit Params Type</div>
+  </div>
+</div>
+
+<div class="page-footer">
+  <span>CL-01 · AI AGENT FOR ITSM AUTOMATION</span>
+  <span>DATABASE SCHEMA · PostgreSQL</span>
+  <span class="page-num">06</span>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CL-01 — Project Overview</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1923;
+    --paper: #f8f6f1;
+    --cream: #eeeae0;
+    --blue: #1a3a5c;
+    --accent: #c84b2f;
+    --gold: #c9952a;
+    --muted: #6b7280;
+    --border: #ddd8cc;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    width: 1400px;
+    min-height: 900px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* LAYOUT */
+  .page {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    min-height: 900px;
+  }
+
+  /* LEFT SIDEBAR */
+  .sidebar {
+    background: var(--blue);
+    color: white;
+    padding: 52px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .sidebar::before {
+    content: 'CL-01';
+    position: absolute;
+    bottom: -20px; right: -20px;
+    font-family: 'DM Serif Display', serif;
+    font-size: 10rem;
+    color: rgba(255,255,255,0.04);
+    line-height: 1;
+    pointer-events: none;
+  }
+  .sidebar-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 16px;
+  }
+  .sidebar h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.6rem;
+    line-height: 1.15;
+    color: white;
+    margin-bottom: 8px;
+  }
+  .sidebar h1 em {
+    font-style: italic;
+    color: #f0c070;
+  }
+  .sidebar-subtitle {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 40px;
+    font-weight: 300;
+  }
+  .sidebar-divider {
+    width: 40px;
+    height: 2px;
+    background: var(--accent);
+    margin: 32px 0;
+  }
+  .meta-item {
+    margin-bottom: 22px;
+  }
+  .meta-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 5px;
+  }
+  .meta-value {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.85);
+    font-weight: 500;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(200,75,47,0.25);
+    border: 1px solid rgba(200,75,47,0.5);
+    color: #f08070;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #f08070;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .tech-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .tech-pill {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.75);
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* MAIN CONTENT */
+  .main {
+    padding: 52px 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+  }
+
+  .section-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  /* DESCRIPTION BLOCK */
+  .description-block h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.9rem;
+    color: var(--blue);
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  .description-block p {
+    font-size: 0.92rem;
+    line-height: 1.75;
+    color: #374151;
+    max-width: 680px;
+  }
+
+  /* GOALS GRID */
+  .goals-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .goal-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .goal-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--card-color, var(--blue));
+  }
+  .goal-icon {
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+  }
+  .goal-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--blue);
+    margin-bottom: 6px;
+  }
+  .goal-desc {
+    font-size: 0.74rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  /* TECH STACK */
+  .tech-section {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+  }
+  .tech-section h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    color: var(--blue);
+    margin-bottom: 16px;
+  }
+  .tech-stack-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .tech-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--paper);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .tech-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .tech-name {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .tech-cat {
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-left: auto;
+  }
+
+  /* PAGE FOOTER */
+  .page-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+  }
+  .page-footer span {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+  .page-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.2rem;
+    color: var(--border);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-tag">Documentation · v1.0</div>
+    <h1>AI Agent for <em>ITSM</em> Automation</h1>
+    <p class="sidebar-subtitle">Project CL-01 — Technical Reference</p>
+
+    <div class="meta-item">
+      <div class="meta-label">Status</div>
+      <div class="status-badge"><span class="status-dot"></span>In Development</div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="meta-item">
+      <div class="meta-label">Project ID</div>
+      <div class="meta-value">CL-01</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Agent Type</div>
+      <div class="meta-value">ReAct Agent (LangGraph)</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">LLM</div>
+      <div class="meta-value">Gemini 2.5 Flash</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Orchestration SDK</div>
+      <div class="meta-value">LangGraph + FastMCP</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Database</div>
+      <div class="meta-value">PostgreSQL (10 tables)</div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="meta-item">
+      <div class="meta-label">Technology Stack</div>
+      <div class="tech-pills">
+        <span class="tech-pill">Python</span>
+        <span class="tech-pill">LangChain</span>
+        <span class="tech-pill">LangGraph</span>
+        <span class="tech-pill">FastMCP</span>
+        <span class="tech-pill">Gemini API</span>
+        <span class="tech-pill">PostgreSQL</span>
+        <span class="tech-pill">REST APIs</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- DESCRIPTION -->
+    <div class="description-block">
+      <div class="section-eyebrow">01 — Project Overview</div>
+      <h2>Autonomous Incident Response<br>for IT Service Management</h2>
+      <p>
+        This project focuses on building an AI-driven automation agent for IT Service Management (ITSM). The agent continuously monitors and analyzes system and application logs, detects anomalies, and automatically creates, classifies, assigns, and resolves ITSM tickets. Based on predefined rules and learned patterns, the agent proposes or executes remediation actions — with optional human approval workflows for critical operations. The goal is to reduce incident response time, improve operational efficiency, and automate repetitive IT support tasks.
+      </p>
+    </div>
+
+    <!-- GOALS -->
+    <div>
+      <div class="section-eyebrow">Core Objectives</div>
+      <div class="goals-grid">
+        <div class="goal-card" style="--card-color: #1a3a5c;">
+          <div class="goal-icon">⚡</div>
+          <div class="goal-title">Reduce Response Time</div>
+          <div class="goal-desc">Automatically detect and respond to incidents within seconds of log anomaly detection — no manual triage required.</div>
+        </div>
+        <div class="goal-card" style="--card-color: #c84b2f;">
+          <div class="goal-icon">🤖</div>
+          <div class="goal-title">Automate Ticket Creation</div>
+          <div class="goal-desc">Classify, assign and populate ITSM tickets with root cause analysis, evidence chain, and recovery steps.</div>
+        </div>
+        <div class="goal-card" style="--card-color: #c9952a;">
+          <div class="goal-icon">🧠</div>
+          <div class="goal-title">Learn & Improve</div>
+          <div class="goal-desc">Human-in-the-loop feedback loop feeds a persistent knowledge base, reducing MTTR with every resolved incident.</div>
+        </div>
+        <div class="goal-card" style="--card-color: #2d6a4f;">
+          <div class="goal-icon">🛡️</div>
+          <div class="goal-title">Risk Assessment</div>
+          <div class="goal-desc">Score each recovery plan (0–100) and escalate high-risk operations to human approval before execution.</div>
+        </div>
+        <div class="goal-card" style="--card-color: #6b21a8;">
+          <div class="goal-icon">📋</div>
+          <div class="goal-title">Full Audit Trail</div>
+          <div class="goal-desc">Every agent action, tool call, and reasoning step is logged for compliance, debugging, and continuous improvement.</div>
+        </div>
+        <div class="goal-card" style="--card-color: #0e7490;">
+          <div class="goal-icon">🔗</div>
+          <div class="goal-title">ITSM Integration</div>
+          <div class="goal-desc">Compatible with ServiceNow, Jira Service Management, or custom APIs for seamless ticket lifecycle management.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TECH STACK -->
+    <div class="tech-section">
+      <h3>Technology & Tools</h3>
+      <div class="tech-stack-grid">
+        <div class="tech-item">
+          <div class="tech-dot" style="background:#3b82f6"></div>
+          <span class="tech-name">Python</span>
+          <span class="tech-cat">Core Language</span>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:#8b5cf6"></div>
+          <span class="tech-name">LangGraph</span>
+          <span class="tech-cat">Orchestration</span>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:#10b981"></div>
+          <span class="tech-name">FastMCP</span>
+          <span class="tech-cat">Tool Server</span>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:#f59e0b"></div>
+          <span class="tech-name">Gemini 2.5 Flash</span>
+          <span class="tech-cat">LLM</span>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:#ef4444"></div>
+          <span class="tech-name">PostgreSQL</span>
+          <span class="tech-cat">Database</span>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:#6366f1"></div>
+          <span class="tech-name">LangChain</span>
+          <span class="tech-cat">LLM Framework</span>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:#0ea5e9"></div>
+          <span class="tech-name">REST APIs</span>
+          <span class="tech-cat">Integration</span>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:#84cc16"></div>
+          <span class="tech-name">ELK Stack</span>
+          <span class="tech-cat">Log Management</span>
+        </div>
+        <div class="tech-item">
+          <div class="tech-dot" style="background:#f97316"></div>
+          <span class="tech-name">ServiceNow / Jira</span>
+          <span class="tech-cat">ITSM Platform</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="page-footer">
+      <span>CL-01 · AI AGENT FOR ITSM AUTOMATION</span>
+      <span>PROJECT OVERVIEW</span>
+      <span class="page-num">01</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

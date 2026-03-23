@@ -30,6 +30,9 @@ class AgentState(TypedDict):
     # Structured Memory (The "Clean" Context)
     evidence_chain: Annotated[List[Evidence], operator.add] # Appends new evidence
     
+    # neo4j graph context (optional, can be None if not used)
+    topology_context: Optional[str]
+    
     # Outputs
     root_cause: Optional[str]
     recovery_plan: Optional[RecoveryPlan]

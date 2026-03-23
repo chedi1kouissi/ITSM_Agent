@@ -1,7 +1,88 @@
 {
-  "incident_id": "INC-002",
-  "title": "Inventory Service Memory Leak",
-  "root_cause": "memory_leak",
-  "affected_service": "inventory-api",
-  "severity": "high"
+  "app_id": "ecommerce-prod",
+  "incident_id": "INC-2026-0003",
+  "app_logs": [
+    {
+      "timestamp": "2026-02-05T11:00:00Z",
+      "level": "INFO",
+      "service_id": "catalog-api",
+      "message": "Request completed",
+      "metadata": { "status": 200, "latency_ms": 21 }
+    },
+    {
+      "timestamp": "2026-02-05T11:00:05Z",
+      "level": "INFO",
+      "service_id": "catalog-api",
+      "message": "Request completed",
+      "metadata": { "status": 200, "latency_ms": 31 }
+    },
+    {
+      "timestamp": "2026-02-05T11:02:10Z",
+      "level": "WARN",
+      "service_id": "catalog-api",
+      "message": "Cache size growing unexpectedly",
+      "metadata": { "size_mb": 850 }
+    },
+    {
+      "timestamp": "2026-02-05T11:03:18Z",
+      "level": "WARN",
+      "service_id": "catalog-api",
+      "message": "High memory usage detected",
+      "metadata": { "usage_mb": 1500 }
+    },
+    {
+      "timestamp": "2026-02-05T11:04:43Z",
+      "level": "ERROR",
+      "service_id": "catalog-api",
+      "message": "OutOfMemoryError: allocation failed",
+      "metadata": {}
+    }
+  ],
+  "database_logs": [],
+  "infrastructure_logs": [
+    {
+      "timestamp": "2026-02-05T11:04:38Z",
+      "level": "WARN",
+      "service_id": "k8s-prod-cluster",
+      "message": "Container memory usage critical",
+      "metadata": { "container": "catalog-api", "usage_pct": 96 }
+    },
+    {
+      "timestamp": "2026-02-05T11:04:42Z",
+      "level": "ERROR",
+      "service_id": "k8s-prod-cluster",
+      "message": "Container terminated OOMKilled",
+      "metadata": { "container": "catalog-api", "reason": "OOMKilled" }
+    },
+    {
+      "timestamp": "2026-02-05T11:04:58Z",
+      "level": "INFO",
+      "service_id": "k8s-prod-cluster",
+      "message": "Pod restarted",
+      "metadata": { "pod": "catalog-api" }
+    }
+  ],
+  "monitoring_logs": [
+    {
+      "timestamp": "2026-02-05T11:02:58Z",
+      "level": "ALERT",
+      "service_id": "catalog-api",
+      "message": "HighMemory",
+      "metadata": { "usage_pct": 92 }
+    },
+    {
+      "timestamp": "2026-02-05T11:04:48Z",
+      "level": "ALERT",
+      "service_id": "catalog-api",
+      "message": "ServiceRestartDetected",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-02-05T11:05:28Z",
+      "level": "ALERT",
+      "service_id": "catalog-api",
+      "message": "MemoryNormalized",
+      "metadata": { "usage_pct": 45 }
+    }
+  ]
 }

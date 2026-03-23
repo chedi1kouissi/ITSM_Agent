@@ -4,43 +4,33 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
 load_dotenv()
-
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_db_connection():
-    """Establishes a connection to the PostgreSQL database."""
-    if not DATABASE_URL:
-        raise ValueError("DATABASE_URL environment variable is not set.")
     try:
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-        return conn
+        return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     except psycopg2.Error as e:
-        print(f"Error connecting to database: {e}")
+        print(f"❌ Connection Error: {e}")
         return None
 
 def init_db():
-    """Initializes the database with the required tables."""
     conn = get_db_connection()
-    if not conn:
-        print("Failed to connect to DB, cannot initialize.")
-        return
-
+    if not conn: return
     try:
         cur = conn.cursor()
-
-        # 1. Incidents Table
+        # 1. Incidents Table (Added app_id)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS incidents (
                 id SERIAL PRIMARY KEY,
+                app_id VARCHAR(50), 
                 incident_id VARCHAR(50) UNIQUE NOT NULL,
                 status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
                 risk_score INTEGER,
                 recovery_plan TEXT,
-                agent_notes TEXT, -- Internal monologue/summary
+                agent_notes TEXT,
                 generated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         """)
-
         # 2. Evidence Table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS evidence (
@@ -53,7 +43,6 @@ def init_db():
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         """)
-
         # 3. Recovery Steps Table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS recovery_steps (
@@ -66,11 +55,11 @@ def init_db():
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         """)
-
-        # 4. Agent Actions Table (Audit)
+        # 4. Agent Actions Table (Added app_id)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS agent_actions (
                 id SERIAL PRIMARY KEY,
+                app_id VARCHAR(50),
                 incident_id VARCHAR(50) REFERENCES incidents(incident_id) ON DELETE SET NULL,
                 action_type VARCHAR(50) NOT NULL,
                 input_params JSONB,
@@ -80,12 +69,10 @@ def init_db():
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         """)
-
         conn.commit()
-        print("Database initialized successfully with Phase 1 tables.")
-
-    except psycopg2.Error as e:
-        print(f"Error initializing database: {e}")
+        print("✅ Database initialized successfully with app_id support.")
+    except Exception as e:
+        print(f"❌ Init Error: {e}")
         conn.rollback()
     finally:
         cur.close()

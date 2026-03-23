@@ -1,25 +1,124 @@
 {
-  "incident_id": "INC-001",
-  "title": "Database Timeout Causing Payment Service Failure",
-  "root_cause": "database_connection_exhaustion",
-  "affected_service": "payment-api",
-  "severity": "high",
-  "timeline": [
+  "app_id": "ecommerce-prod",
+  "incident_id": "INC-2026-0002",
+  "app_logs": [
     {
-      "phase": "normal",
-      "start": "10:00:00"
+      "timestamp": "2026-02-05T10:00:03Z",
+      "level": "INFO",
+      "service_id": "payment-api",
+      "message": "Request completed",
+      "metadata": { "status": 200, "latency_ms": 39 }
     },
     {
-      "phase": "degradation",
-      "start": "10:02:00"
+      "timestamp": "2026-02-05T10:00:18Z",
+      "level": "WARN",
+      "service_id": "payment-api",
+      "message": "Slow database query",
+      "metadata": { "latency_ms": 1200, "request_id": "req_101" }
     },
     {
-      "phase": "incident",
-      "start": "10:05:00"
+      "timestamp": "2026-02-05T10:04:00Z",
+      "level": "ERROR",
+      "service_id": "payment-api",
+      "message": "Database timeout",
+      "metadata": { "request_id": "req_210", "latency_ms": 5200 }
     },
     {
-      "phase": "recovery",
-      "start": "10:08:00"
+      "timestamp": "2026-02-05T10:04:30Z",
+      "level": "ERROR",
+      "service_id": "payment-api",
+      "message": "Unhandled exception ConnectionPoolExhausted",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-02-05T10:04:52Z",
+      "level": "ERROR",
+      "service_id": "payment-api",
+      "message": "Service unavailable returning 503",
+      "metadata": {}
+    }
+  ],
+  "database_logs": [
+    {
+      "timestamp": "2026-02-05T10:01:18Z",
+      "level": "WARN",
+      "service_id": "payment-db",
+      "message": "Slow query execution",
+      "metadata": { "execution_time_s": 3.2, "query": "SELECT * FROM payments" }
+    },
+    {
+      "timestamp": "2026-02-05T10:03:45Z",
+      "level": "WARN",
+      "service_id": "payment-db",
+      "message": "Connection usage high",
+      "metadata": { "active_connections": 145, "max_connections": 150 }
+    },
+    {
+      "timestamp": "2026-02-05T10:03:58Z",
+      "level": "ERROR",
+      "service_id": "payment-db",
+      "message": "Connection pool exhausted",
+      "metadata": { "active_connections": 150, "max_connections": 150 }
+    },
+    {
+      "timestamp": "2026-02-05T10:03:59Z",
+      "level": "ERROR",
+      "service_id": "payment-db",
+      "message": "Query timeout",
+      "metadata": { "execution_time_s": 7.8 }
+    }
+  ],
+  "infrastructure_logs": [
+    {
+      "timestamp": "2026-02-05T10:04:35Z",
+      "level": "WARN",
+      "service_id": "k8s-prod-cluster",
+      "message": "Pod memory usage high",
+      "metadata": { "pod": "payment-api-7f8c9", "usage_pct": 92 }
+    },
+    {
+      "timestamp": "2026-02-05T10:04:37Z",
+      "level": "ERROR",
+      "service_id": "k8s-prod-cluster",
+      "message": "Container restarted",
+      "metadata": { "container": "payment-api", "exit_code": 137 }
+    },
+    {
+      "timestamp": "2026-02-05T10:04:50Z",
+      "level": "ERROR",
+      "service_id": "k8s-prod-cluster",
+      "message": "Liveness probe failed",
+      "metadata": { "target": "payment-api" }
+    }
+  ],
+  "monitoring_logs": [
+    {
+      "timestamp": "2026-02-05T10:01:43Z",
+      "level": "ALERT",
+      "service_id": "payment-db",
+      "message": "DatabaseLatencyHigh",
+      "metadata": { "latency_ms": 1400, "threshold_ms": 800 }
+    },
+    {
+      "timestamp": "2026-02-05T10:03:55Z",
+      "level": "ALERT",
+      "service_id": "payment-api",
+      "message": "ErrorRateSpike",
+      "metadata": { "error_rate_pct": 32, "threshold_pct": 10 }
+    },
+    {
+      "timestamp": "2026-02-05T10:04:20Z",
+      "level": "ALERT",
+      "service_id": "payment-api",
+      "message": "ServiceDown",
+      "metadata": { "instances": 0 }
+    },
+    {
+      "timestamp": "2026-02-05T10:07:07Z",
+      "level": "ALERT",
+      "service_id": "payment-api",
+      "message": "RecoveryDetected",
+      "metadata": { "error_rate_pct": 2 }
     }
   ]
 }

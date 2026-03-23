@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CL-01 — LLM Benchmark</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1923;
+    --paper: #f8f6f1;
+    --cream: #eeeae0;
+    --blue: #1a3a5c;
+    --accent: #c84b2f;
+    --gold: #c9952a;
+    --muted: #6b7280;
+    --border: #ddd8cc;
+    --green: #2d6a4f;
+    --winner: #1a3a5c;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    width: 1400px;
+    min-height: 900px;
+    padding: 52px 60px;
+    overflow: hidden;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 36px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .page-header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.2rem;
+    color: var(--blue);
+    line-height: 1.1;
+  }
+  .page-meta {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .page-num-large {
+    font-family: 'DM Serif Display', serif;
+    font-size: 3rem;
+    color: var(--border);
+    line-height: 1;
+  }
+
+  /* INTRO */
+  .intro-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: start;
+    margin-bottom: 28px;
+  }
+  .intro-text {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: #374151;
+  }
+  .criteria-pills {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 220px;
+  }
+  .criteria-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.72rem;
+  }
+  .criteria-pill span { color: var(--muted); font-size: 0.68rem; margin-left: auto; font-family: 'DM Mono', monospace; }
+
+  /* BENCHMARK TABLE */
+  .benchmark-table-wrap {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead tr {
+    background: var(--blue);
+    color: white;
+  }
+  thead th {
+    padding: 14px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-align: left;
+    font-weight: 500;
+    color: rgba(255,255,255,0.7);
+  }
+  thead th.center { text-align: center; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--cream);
+    transition: background 0.15s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr.winner-row {
+    background: rgba(26,58,92,0.04);
+  }
+  tbody tr:hover { background: rgba(26,58,92,0.03); }
+
+  tbody td {
+    padding: 13px 16px;
+    vertical-align: middle;
+  }
+
+  .model-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .model-logo {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .model-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .model-provider {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .winner-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--blue);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.6rem;
+    font-family: 'DM Mono', monospace;
+    margin-top: 3px;
+  }
+
+  /* SCORE BAR */
+  .score-cell { min-width: 120px; }
+  .score-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .score-bar-bg {
+    flex: 1;
+    height: 6px;
+    background: var(--cream);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--fill-color, var(--blue));
+  }
+  .score-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--ink);
+    min-width: 30px;
+    text-align: right;
+  }
+
+  /* RATING DOTS */
+  .rating-dots {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+  }
+  .dot.filled { background: var(--fill-color, var(--blue)); border-color: var(--fill-color, var(--blue)); }
+
+  /* LABEL BADGE */
+  .label-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+  .label-badge.high { background: rgba(45,106,79,0.1); color: var(--green); }
+  .label-badge.med { background: rgba(201,149,42,0.1); color: var(--gold); }
+  .label-badge.low { background: rgba(200,75,47,0.1); color: var(--accent); }
+  .label-badge.selected { background: var(--blue); color: white; }
+
+  .center { text-align: center; }
+
+  /* BOTTOM: verdict + chart */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .verdict-card {
+    background: var(--blue);
+    color: white;
+    border-radius: 10px;
+    padding: 24px 28px;
+  }
+  .verdict-card h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    color: #f0c070;
+    margin-bottom: 12px;
+  }
+  .verdict-card p { font-size: 0.78rem; line-height: 1.7; color: rgba(255,255,255,0.75); }
+  .verdict-highlights {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .vh-item {
+    background: rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .vh-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .vh-val { font-size: 0.82rem; font-weight: 600; color: white; }
+
+  .radar-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+  }
+  .radar-card h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.05rem;
+    color: var(--blue);
+    margin-bottom: 16px;
+  }
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: 120px 1fr 40px; align-items: center; gap: 10px; }
+  .bar-label { font-size: 0.72rem; color: var(--ink); text-align: right; }
+  .bar-track { height: 8px; background: var(--cream); border-radius: 4px; overflow: hidden; position: relative; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-val { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); }
+
+  .page-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 16px; border-top: 1px solid var(--border); margin-top: 20px;
+  }
+  .page-footer span { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); letter-spacing: 0.1em; }
+  .page-num { font-family: 'DM Serif Display', serif; font-size: 1.2rem; color: var(--border); }
+  .placeholder-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--gold);
+    background: rgba(201,149,42,0.08);
+    border: 1px solid rgba(201,149,42,0.25);
+    padding: 4px 12px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">04 — LLM Benchmark</div>
+    <h1>Model Evaluation & Selection<br>for ITSM Agent</h1>
+  </div>
+  <div class="page-meta">
+    <div class="page-num-large">04</div>
+    <div>CL-01 · ITSM AUTOMATION</div>
+  </div>
+</div>
+
+<div class="intro-row">
+  <div>
+    <div class="placeholder-note">⚠ Placeholder data — to be updated with real benchmark results</div>
+    <p class="intro-text">Multiple large language models were evaluated for suitability as the core reasoning engine of the ITSM agent. Models were assessed on log analysis accuracy, tool-calling reliability, structured output compliance, latency, and cost-efficiency. The evaluation focused on the specific demands of SRE incident response: causal chain reasoning, risk assessment, and multi-step planning under structured constraints.</p>
+  </div>
+  <div class="criteria-pills">
+    <div class="criteria-pill">🧠 Reasoning Quality <span>weight: 25%</span></div>
+    <div class="criteria-pill">🔧 Tool Call Reliability <span>weight: 30%</span></div>
+    <div class="criteria-pill">📄 Log Analysis Accuracy <span>weight: 25%</span></div>
+    <div class="criteria-pill">⚡ Latency <span>weight: 10%</span></div>
+    <div class="criteria-pill">💰 Cost / 1M tokens <span>weight: 10%</span></div>
+  </div>
+</div>
+
+<div class="benchmark-table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>Reasoning</th>
+        <th>Tool Calling</th>
+        <th>Log Analysis</th>
+        <th class="center">Latency</th>
+        <th class="center">Cost</th>
+        <th class="center">Overall Score</th>
+        <th class="center">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <!-- WINNER -->
+      <tr class="winner-row">
+        <td>
+          <div class="model-cell">
+            <div class="model-logo">⚡</div>
+            <div>
+              <div class="model-name">Gemini 2.5 Flash</div>
+              <div class="model-provider">Google DeepMind</div>
+              <div class="winner-badge">★ Selected</div>
+            </div>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:88%;--fill-color:#1a3a5c"></div></div>
+            <span class="score-num">88</span>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:92%;--fill-color:#1a3a5c"></div></div>
+            <span class="score-num">92</span>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:86%;--fill-color:#1a3a5c"></div></div>
+            <span class="score-num">86</span>
+          </div>
+        </td>
+        <td class="center"><span class="label-badge high">Fast</span></td>
+        <td class="center"><span class="label-badge high">Low</span></td>
+        <td class="center"><strong style="font-size:1rem;color:var(--blue)">91</strong><span style="font-size:0.65rem;color:var(--muted)">/100</span></td>
+        <td class="center"><span class="label-badge selected">✓ In Use</span></td>
+      </tr>
+
+      <tr>
+        <td>
+          <div class="model-cell">
+            <div class="model-logo">🤖</div>
+            <div>
+              <div class="model-name">GPT-4o</div>
+              <div class="model-provider">OpenAI</div>
+            </div>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:91%;--fill-color:#6366f1"></div></div>
+            <span class="score-num">91</span>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:89%;--fill-color:#6366f1"></div></div>
+            <span class="score-num">89</span>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:88%;--fill-color:#6366f1"></div></div>
+            <span class="score-num">88</span>
+          </div>
+        </td>
+        <td class="center"><span class="label-badge med">Medium</span></td>
+        <td class="center"><span class="label-badge low">High</span></td>
+        <td class="center"><strong style="font-size:1rem;color:#6366f1">87</strong><span style="font-size:0.65rem;color:var(--muted)">/100</span></td>
+        <td class="center"><span class="label-badge med">Evaluated</span></td>
+      </tr>
+
+      <tr>
+        <td>
+          <div class="model-cell">
+            <div class="model-logo">🔮</div>
+            <div>
+              <div class="model-name">Claude 3.5 Sonnet</div>
+              <div class="model-provider">Anthropic</div>
+            </div>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:90%;--fill-color:#8b5cf6"></div></div>
+            <span class="score-num">90</span>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:87%;--fill-color:#8b5cf6"></div></div>
+            <span class="score-num">87</span>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:89%;--fill-color:#8b5cf6"></div></div>
+            <span class="score-num">89</span>
+          </div>
+        </td>
+        <td class="center"><span class="label-badge med">Medium</span></td>
+        <td class="center"><span class="label-badge med">Medium</span></td>
+        <td class="center"><strong style="font-size:1rem;color:#8b5cf6">85</strong><span style="font-size:0.65rem;color:var(--muted)">/100</span></td>
+        <td class="center"><span class="label-badge med">Evaluated</span></td>
+      </tr>
+
+      <tr>
+        <td>
+          <div class="model-cell">
+            <div class="model-logo">🦙</div>
+            <div>
+              <div class="model-name">Llama 3.1 70B</div>
+              <div class="model-provider">Meta (self-hosted)</div>
+            </div>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:74%;--fill-color:#10b981"></div></div>
+            <span class="score-num">74</span>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:71%;--fill-color:#10b981"></div></div>
+            <span class="score-num">71</span>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:72%;--fill-color:#10b981"></div></div>
+            <span class="score-num">72</span>
+          </div>
+        </td>
+        <td class="center"><span class="label-badge high">Fast</span></td>
+        <td class="center"><span class="label-badge high">Free</span></td>
+        <td class="center"><strong style="font-size:1rem;color:#10b981">70</strong><span style="font-size:0.65rem;color:var(--muted)">/100</span></td>
+        <td class="center"><span class="label-badge low">Dropped</span></td>
+      </tr>
+
+      <tr>
+        <td>
+          <div class="model-cell">
+            <div class="model-logo">🌀</div>
+            <div>
+              <div class="model-name">Mistral Large</div>
+              <div class="model-provider">Mistral AI</div>
+            </div>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:78%;--fill-color:#f59e0b"></div></div>
+            <span class="score-num">78</span>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:75%;--fill-color:#f59e0b"></div></div>
+            <span class="score-num">75</span>
+          </div>
+        </td>
+        <td class="score-cell">
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:76%;--fill-color:#f59e0b"></div></div>
+            <span class="score-num">76</span>
+          </div>
+        </td>
+        <td class="center"><span class="label-badge high">Fast</span></td>
+        <td class="center"><span class="label-badge med">Medium</span></td>
+        <td class="center"><strong style="font-size:1rem;color:#f59e0b">74</strong><span style="font-size:0.65rem;color:var(--muted)">/100</span></td>
+        <td class="center"><span class="label-badge low">Dropped</span></td>
+      </tr>
+
+    </tbody>
+  </table>
+</div>
+
+<!-- BOTTOM -->
+<div class="bottom-grid">
+  <div class="verdict-card">
+    <h3>Why Gemini 2.5 Flash?</h3>
+    <p>Gemini 2.5 Flash achieved the highest tool-calling reliability score (92/100), the most critical metric for a ReAct agent that depends on structured, ordered tool invocation. It also demonstrated exceptional performance on multi-log cross-referencing tasks while offering the best cost-to-performance ratio among all evaluated models.</p>
+    <div class="verdict-highlights">
+      <div class="vh-item">
+        <div class="vh-label">Tool Call Score</div>
+        <div class="vh-val">92 / 100</div>
+      </div>
+      <div class="vh-item">
+        <div class="vh-label">Temperature Used</div>
+        <div class="vh-val">0.4</div>
+      </div>
+      <div class="vh-item">
+        <div class="vh-label">Cost Rank</div>
+        <div class="vh-val">#1 Lowest</div>
+      </div>
+      <div class="vh-item">
+        <div class="vh-label">Overall Rank</div>
+        <div class="vh-val">#1 / 5 models</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="radar-card">
+    <h3>Gemini 2.5 Flash — Score Breakdown</h3>
+    <div class="bar-chart">
+      <div class="bar-row">
+        <div class="bar-label">Tool Calling</div>
+        <div class="bar-track"><div class="bar-fill" style="width:92%;background:var(--blue)"></div></div>
+        <div class="bar-val">92</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Reasoning</div>
+        <div class="bar-track"><div class="bar-fill" style="width:88%;background:var(--blue)"></div></div>
+        <div class="bar-val">88</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Log Analysis</div>
+        <div class="bar-track"><div class="bar-fill" style="width:86%;background:var(--blue)"></div></div>
+        <div class="bar-val">86</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Latency</div>
+        <div class="bar-track"><div class="bar-fill" style="width:94%;background:#2d6a4f"></div></div>
+        <div class="bar-val">94</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Cost Efficiency</div>
+        <div class="bar-track"><div class="bar-fill" style="width:97%;background:#c9952a"></div></div>
+        <div class="bar-val">97</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Overall</div>
+        <div class="bar-track"><div class="bar-fill" style="width:91%;background:var(--accent)"></div></div>
+        <div class="bar-val" style="font-weight:700;color:var(--ink)">91</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-footer">
+  <span>CL-01 · AI AGENT FOR ITSM AUTOMATION</span>
+  <span>LLM BENCHMARK & MODEL SELECTION</span>
+  <span class="page-num">04</span>
+</div>
+
+</body>
+</html>

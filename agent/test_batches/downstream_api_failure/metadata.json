@@ -1,7 +1,67 @@
 {
-  "incident_id": "INC-003",
-  "title": "External Payment Provider Failure",
-  "root_cause": "downstream_api_timeout",
-  "affected_service": "payment-api",
-  "severity": "high"
+  "app_id": "ecommerce-prod",
+  "incident_id": "INC-2026-0005",
+  "app_logs": [
+    {
+      "timestamp": "2026-02-05T12:00:00Z",
+      "level": "INFO",
+      "service_id": "payment-api",
+      "message": "Payment processed",
+      "metadata": { "latency_ms": 300 }
+    },
+    {
+      "timestamp": "2026-02-05T12:02:15Z",
+      "level": "WARN",
+      "service_id": "payment-api",
+      "message": "External API slow response",
+      "metadata": { "latency_ms": 2500 }
+    },
+    {
+      "timestamp": "2026-02-05T12:03:22Z",
+      "level": "ERROR",
+      "service_id": "payment-api",
+      "message": "Payment failed: upstream timeout",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-02-05T12:03:40Z",
+      "level": "ERROR",
+      "service_id": "payment-api",
+      "message": "Retry attempt failed",
+      "metadata": { "request_id": "req_502" }
+    }
+  ],
+  "database_logs": [],
+  "infrastructure_logs": [
+    {
+      "timestamp": "2026-02-05T12:03:30Z",
+      "level": "ERROR",
+      "service_id": "api-gateway-prod",
+      "message": "Upstream timeout",
+      "metadata": { "target": "payment-provider" }
+    },
+    {
+      "timestamp": "2026-02-05T12:03:42Z",
+      "level": "ERROR",
+      "service_id": "api-gateway-prod",
+      "message": "HTTP 502 Bad Gateway",
+      "metadata": { "target": "payment-provider" }
+    }
+  ],
+  "monitoring_logs": [
+    {
+      "timestamp": "2026-02-05T12:02:30Z",
+      "level": "ALERT",
+      "service_id": "payment-api",
+      "message": "ExternalDependencyLatency",
+      "metadata": { "service": "payment-provider", "latency_ms": 3200 }
+    },
+    {
+      "timestamp": "2026-02-05T12:03:35Z",
+      "level": "ALERT",
+      "service_id": "payment-api",
+      "message": "ErrorRateSpike",
+      "metadata": { "error_rate_pct": 28 }
+    }
+  ]
 }

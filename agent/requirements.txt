@@ -20,3 +20,4 @@ python-dotenv             # Environment variable management
 fastmcp
 psycopg2-binary
 uvicorn
+neo4j

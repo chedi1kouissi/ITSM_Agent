@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CL-01 — Code Snippets</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1923;
+    --paper: #f8f6f1;
+    --cream: #eeeae0;
+    --blue: #1a3a5c;
+    --accent: #c84b2f;
+    --gold: #c9952a;
+    --muted: #6b7280;
+    --border: #ddd8cc;
+    --green: #2d6a4f;
+    --code-bg: #0f1923;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    width: 1400px;
+    min-height: 900px;
+    padding: 52px 60px;
+    overflow: hidden;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 36px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .page-header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.2rem;
+    color: var(--blue);
+    line-height: 1.1;
+  }
+  .page-num-large {
+    font-family: 'DM Serif Display', serif;
+    font-size: 3rem;
+    color: var(--border);
+    line-height: 1;
+  }
+  .page-meta { text-align: right; font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); line-height: 1.8; }
+
+  /* LAYOUT */
+  .code-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .code-grid.full { grid-template-columns: 1fr; }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: var(--code-bg);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .code-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .code-dots { display: flex; gap: 6px; }
+  .dot-r { width: 10px; height: 10px; border-radius: 50%; background: #ff5f57; }
+  .dot-y { width: 10px; height: 10px; border-radius: 50%; background: #febc2e; }
+  .dot-g { width: 10px; height: 10px; border-radius: 50%; background: #28c840; }
+  .code-filename {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.4);
+    margin-left: 4px;
+  }
+  .code-badge {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.05);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  pre {
+    padding: 16px 20px;
+    overflow: hidden;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 1.65;
+    color: #c8d6f0;
+  }
+
+  /* SYNTAX HIGHLIGHTING */
+  .kw  { color: #c792ea; } /* keywords */
+  .fn  { color: #82aaff; } /* functions */
+  .str { color: #c3e88d; } /* strings */
+  .cm  { color: #546e7a; font-style: italic; } /* comments */
+  .cl  { color: #ffcb6b; } /* class names */
+  .nu  { color: #f78c6c; } /* numbers */
+  .dc  { color: #89ddff; } /* decorators / punctuation */
+  .va  { color: #eeffff; } /* variables */
+
+  /* ANNOTATION */
+  .annotation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .annotation-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    border-left: 3px solid var(--card-color, var(--blue));
+  }
+  .annotation-card h4 {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--blue);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .annotation-card p {
+    font-size: 0.7rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .page-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 16px; border-top: 1px solid var(--border);
+  }
+  .page-footer span { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); letter-spacing: 0.1em; }
+  .page-num { font-family: 'DM Serif Display', serif; font-size: 1.2rem; color: var(--border); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">05 — Code Overview</div>
+    <h1>Key Code Components<br>& Implementation</h1>
+  </div>
+  <div class="page-meta">
+    <div class="page-num-large">05</div>
+    <div>CL-01 · ITSM AUTOMATION</div>
+  </div>
+</div>
+
+<!-- ANNOTATION ROW -->
+<div class="annotation-grid">
+  <div class="annotation-card" style="--card-color: #c84b2f;">
+    <h4>📁 agent.py</h4>
+    <p>Main agent graph. Binds Gemini to 6 tools, defines the ReAct node, builds and compiles the LangGraph StateGraph.</p>
+  </div>
+  <div class="annotation-card" style="--card-color: #1a3a5c;">
+    <h4>📁 server.py</h4>
+    <p>FastMCP tool server. Exposes 6 database tools via the MCP protocol. Each tool performs a specific PostgreSQL operation.</p>
+  </div>
+  <div class="annotation-card" style="--card-color: #2d6a4f;">
+    <h4>📁 state.py</h4>
+    <p>Defines the typed AgentState for LangGraph. Holds raw logs, evidence chain, recovery plan, risk score, and message history.</p>
+  </div>
+</div>
+
+<div class="code-grid">
+
+  <!-- AGENT NODE -->
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div>
+      <span class="code-filename">agent.py — Graph Construction</span>
+      <span class="code-badge">LangGraph</span>
+    </div>
+    <pre><span class="cm"># Initialize Gemini LLM</span>
+<span class="va">llm</span> = <span class="cl">ChatGoogleGenerativeAI</span>(
+    model=<span class="str">"gemini-2.5-flash"</span>,
+    temperature=<span class="nu">0.4</span>
+)
+
+<span class="cm"># Bind 6 MCP tools to the LLM</span>
+<span class="va">llm_with_tools</span> = <span class="va">llm</span>.<span class="fn">bind_tools</span>(<span class="va">tools</span>)
+
+<span class="cm"># Agent node — injects system prompt once</span>
+<span class="kw">def</span> <span class="fn">agent_node</span>(<span class="va">state</span>: <span class="cl">AgentState</span>):
+    <span class="va">messages</span> = <span class="va">state</span>[<span class="str">"messages"</span>]
+    <span class="kw">if not</span> <span class="va">messages</span> <span class="kw">or not</span> <span class="fn">isinstance</span>(<span class="va">messages</span>[<span class="nu">0</span>], <span class="cl">SystemMessage</span>):
+        <span class="va">messages</span> = [<span class="cl">SystemMessage</span>(<span class="va">content</span>=<span class="va">SYSTEM_PROMPT</span>)] + <span class="fn">list</span>(<span class="va">messages</span>)
+    <span class="va">response</span> = <span class="va">llm_with_tools</span>.<span class="fn">invoke</span>(<span class="va">messages</span>)
+    <span class="kw">return</span> {<span class="str">"messages"</span>: [<span class="va">response</span>]}
+
+<span class="cm"># Build the StateGraph</span>
+<span class="va">workflow</span> = <span class="cl">StateGraph</span>(<span class="cl">AgentState</span>)
+<span class="va">workflow</span>.<span class="fn">add_node</span>(<span class="str">"agent"</span>, <span class="va">agent_node</span>)
+<span class="va">workflow</span>.<span class="fn">add_node</span>(<span class="str">"tools"</span>, <span class="cl">ToolNode</span>(<span class="va">tools</span>))
+<span class="va">workflow</span>.<span class="fn">set_entry_point</span>(<span class="str">"agent"</span>)
+<span class="va">workflow</span>.<span class="fn">add_conditional_edges</span>(<span class="str">"agent"</span>, <span class="va">tools_condition</span>)
+<span class="va">workflow</span>.<span class="fn">add_edge</span>(<span class="str">"tools"</span>, <span class="str">"agent"</span>)
+<span class="va">app</span> = <span class="va">workflow</span>.<span class="fn">compile</span>()</pre>
+  </div>
+
+  <!-- STATE -->
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div>
+      <span class="code-filename">state.py — Agent Memory</span>
+      <span class="code-badge">TypedDict</span>
+    </div>
+    <pre><span class="kw">class</span> <span class="cl">Evidence</span>(<span class="cl">BaseModel</span>):
+    <span class="va">log_line</span>: <span class="cl">str</span>   <span class="cm"># Raw log text</span>
+    <span class="va">source</span>:   <span class="cl">str</span>   <span class="cm"># app / db / infra / monitoring</span>
+    <span class="va">timestamp</span>:<span class="cl">str</span>   <span class="cm"># ISO format</span>
+    <span class="va">reasoning</span>:<span class="cl">str</span>   <span class="cm"># Why this log proves root cause</span>
+
+<span class="kw">class</span> <span class="cl">RecoveryPlan</span>(<span class="cl">BaseModel</span>):
+    <span class="va">steps</span>:          <span class="cl">List</span>[<span class="cl">str</span>]
+    <span class="va">estimated_risk</span>: <span class="cl">int</span>         <span class="cm"># 0–100</span>
+    <span class="va">rollback_plan</span>:  <span class="cl">str</span>
+
+<span class="cm"># The LangGraph state — agent's working memory</span>
+<span class="kw">class</span> <span class="cl">AgentState</span>(<span class="cl">TypedDict</span>):
+    <span class="va">raw_logs</span>:       <span class="cl">str</span>
+    <span class="va">evidence_chain</span>: <span class="cl">Annotated</span>[<span class="cl">List</span>[<span class="cl">Evidence</span>], <span class="va">operator</span>.<span class="va">add</span>]
+    <span class="va">root_cause</span>:     <span class="cl">Optional</span>[<span class="cl">str</span>]
+    <span class="va">recovery_plan</span>:  <span class="cl">Optional</span>[<span class="cl">RecoveryPlan</span>]
+    <span class="va">final_risk_score</span>:<span class="cl">Optional</span>[<span class="cl">int</span>]
+    <span class="va">ticket_status</span>:  <span class="cl">str</span>
+    <span class="va">messages</span>:       <span class="cl">Annotated</span>[<span class="cl">List</span>[<span class="cl">str</span>], <span class="va">operator</span>.<span class="va">add</span>]</pre>
+  </div>
+
+</div>
+
+<!-- FULL WIDTH: MCP TOOL EXAMPLE -->
+<div class="code-grid full">
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div>
+      <span class="code-filename">server.py — FastMCP Tool: finalize_incident()</span>
+      <span class="code-badge">FastMCP · PostgreSQL</span>
+    </div>
+    <pre><span class="dc">@</span><span class="va">mcp</span>.<span class="fn">tool</span>()
+<span class="kw">def</span> <span class="fn">finalize_incident</span>(
+    <span class="va">incident_id</span>: <span class="cl">str</span>,  <span class="va">recovery_plan</span>: <span class="cl">str</span>,
+    <span class="va">risk_score</span>:   <span class="cl">int</span>,  <span class="va">agent_notes</span>:   <span class="cl">str</span>,  <span class="va">app_id</span>: <span class="cl">str</span> = <span class="str">""</span>
+) -> <span class="cl">str</span>:
+    <span class="va">conn</span> = <span class="fn">get_db_connection</span>()
+    <span class="kw">try</span>:
+        <span class="va">cur</span> = <span class="va">conn</span>.<span class="fn">cursor</span>()
+        <span class="cm"># Update incident: ANALYZING → OPEN, write plan + score</span>
+        <span class="va">cur</span>.<span class="fn">execute</span>(<span class="str">"""
+            UPDATE incidents
+            SET status=%s, risk_score=%s, recovery_plan=%s, agent_notes=%s
+            WHERE incident_id=%s
+        """</span>, (<span class="str">"OPEN"</span>, <span class="va">risk_score</span>, <span class="va">recovery_plan</span>, <span class="va">agent_notes</span>, <span class="va">incident_id</span>))
+        <span class="cm"># Log the finalization action for audit</span>
+        <span class="va">cur</span>.<span class="fn">execute</span>(<span class="str">"""
+            INSERT INTO agent_actions (incident_id, app_id, action_type, input_params, output_result, agent_reasoning)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """</span>, (<span class="va">incident_id</span>, <span class="va">app_id</span> <span class="kw">or</span> <span class="kw">None</span>, <span class="str">"finalize_incident"</span>,
+               <span class="va">json</span>.<span class="fn">dumps</span>({<span class="str">"risk_score"</span>: <span class="va">risk_score</span>}), <span class="va">json</span>.<span class="fn">dumps</span>({<span class="str">"status"</span>: <span class="str">"success"</span>}), <span class="va">agent_notes</span>))
+        <span class="va">conn</span>.<span class="fn">commit</span>()
+        <span class="kw">return</span> <span class="fn">f</span><span class="str">"✅ Incident <span class="dc">{</span><span class="va">incident_id</span><span class="dc">}</span> finalized with risk score <span class="dc">{</span><span class="va">risk_score</span><span class="dc">}</span>."</span>
+    <span class="kw">except</span> <span class="cl">Exception</span> <span class="kw">as</span> <span class="va">e</span>:
+        <span class="va">conn</span>.<span class="fn">rollback</span>()
+        <span class="kw">return</span> <span class="fn">f</span><span class="str">"❌ Error: <span class="dc">{</span><span class="fn">str</span>(<span class="va">e</span>)<span class="dc">}</span>"</span></pre>
+  </div>
+</div>
+
+<div class="page-footer">
+  <span>CL-01 · AI AGENT FOR ITSM AUTOMATION</span>
+  <span>CODE COMPONENTS</span>
+  <span class="page-num">05</span>
+</div>
+
+</body>
+</html>
