@@ -127,12 +127,23 @@ class LogListener:
             
         logging.info(f"Saved payload to {AGENT_DATA_FILE}. Invoking Agent...")
         
+        # Determine the Python executable to use
+        # Prefer the 'itsm' venv inside the agent directory if it exists
+        venv_python_win = AGENT_DIR / "itsm" / "Scripts" / "python.exe"
+        venv_python_unix = AGENT_DIR / "itsm" / "bin" / "python"
+        
+        if venv_python_win.exists():
+            agent_python = str(venv_python_win)
+        elif venv_python_unix.exists():
+            agent_python = str(venv_python_unix)
+        else:
+            agent_python = sys.executable
+
         # Run the agent in a subprocess
         try:
-            # Note: The agent runs relative to its own directory, so we set cwd.
             # We also pipe stdout/stderr directly so the user sees the agent thinking.
             process = subprocess.Popen(
-                [sys.executable, "main.py"],
+                [agent_python, "main.py"],
                 cwd=str(AGENT_DIR),
                 stdout=sys.stdout,
                 stderr=sys.stderr

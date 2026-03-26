@@ -1,0 +1,298 @@
+{
+  "app_id": "ecommerce-prod",
+  "incident_id": "INC-2026-D3504737",
+  "scenario_title": "Shared Analytics DB Exhaustion Causes E-commerce Payment Failure",
+  "scenario_description": "An unoptimized heavy report query from the 'reporting-api' exhausts resources on the 'shared-analytics-db'. This database is also critical for logging payment transactions, causing the 'payment-api' to experience write timeouts and failures, leading to customer-facing payment errors and cascading issues through the 'web-frontend' and 'api-gateway-prod'. The 'admin-service' is also impacted by the database's degradation.",
+  "generated_at": "2026-03-26T10:40:47.450748+00:00",
+  "logs": [
+    {
+      "timestamp": "2026-03-26T09:00:05Z",
+      "level": "INFO",
+      "layer": "app",
+      "service_id": "web-frontend",
+      "message": "User session created for user_id: 12345. Navigating to product page.",
+      "metadata": {
+        "user_id": "12345",
+        "route": "/products/item-xyz"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:00:10Z",
+      "level": "INFO",
+      "layer": "app",
+      "service_id": "catalog-api",
+      "message": "Successfully fetched product details for product_id: PROD-9876.",
+      "metadata": {
+        "product_id": "PROD-9876",
+        "latency_ms": 25
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:00:15Z",
+      "level": "INFO",
+      "layer": "app",
+      "service_id": "payment-api",
+      "message": "Payment intent created for order_id: ORD-654321, amount: 99.99 USD.",
+      "metadata": {
+        "order_id": "ORD-654321",
+        "amount": 99.99
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:00:20Z",
+      "level": "INFO",
+      "layer": "database",
+      "service_id": "payment-db",
+      "message": "Transaction committed successfully: TXN-ABCD123. Rows affected: 1.",
+      "metadata": {
+        "transaction_id": "TXN-ABCD123"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:00:25Z",
+      "level": "INFO",
+      "layer": "app",
+      "service_id": "mailer-service",
+      "message": "Email queued for user_id: 12345, type: order_confirmation.",
+      "metadata": {
+        "user_id": "12345",
+        "email_type": "order_confirmation"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:00:30Z",
+      "level": "INFO",
+      "layer": "infrastructure",
+      "service_id": "redis-cache",
+      "message": "Cache hit for key 'product:PROD-1010'.",
+      "metadata": {
+        "key": "product:PROD-1010"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:00:35Z",
+      "level": "INFO",
+      "layer": "app",
+      "service_id": "admin-service",
+      "message": "Admin user 'admin_alice' accessed order details for ORD-555.",
+      "metadata": {
+        "admin_user": "admin_alice",
+        "order_id": "ORD-555"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:00:40Z",
+      "level": "INFO",
+      "layer": "infrastructure",
+      "service_id": "api-gateway-prod",
+      "message": "Request routed successfully: GET /api/catalog/products/PROD-222.",
+      "metadata": {
+        "status_code": 200,
+        "method": "GET",
+        "path": "/api/catalog/products/PROD-222"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:01:00Z",
+      "level": "INFO",
+      "layer": "app",
+      "service_id": "reporting-api",
+      "message": "Scheduled report 'Daily Sales Summary' started.",
+      "metadata": {
+        "report_name": "Daily Sales Summary"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:01:15Z",
+      "level": "INFO",
+      "layer": "database",
+      "service_id": "shared-analytics-db",
+      "message": "Query executed: SELECT COUNT(*) FROM sales_events WHERE event_date = '2026-03-25'. Rows: 150000.",
+      "metadata": {
+        "query_type": "read",
+        "rows_returned": 150000
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:02:00Z",
+      "level": "INFO",
+      "layer": "app",
+      "service_id": "reporting-api",
+      "message": "New ad-hoc report 'Heavy User Behavior Analysis' initiated by admin user 'admin_bob'. Query parameters: {period: 'last_year', min_transactions: 100}.",
+      "metadata": {
+        "report_name": "Heavy User Behavior Analysis",
+        "user": "admin_bob",
+        "query_params": {
+          "period": "last_year",
+          "min_transactions": 100
+        }
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:02:15Z",
+      "level": "WARN",
+      "layer": "database",
+      "service_id": "shared-analytics-db",
+      "message": "High CPU utilization detected (95%). Slow query identified: SELECT * FROM user_activity JOIN transactions ON ... involving large date ranges.",
+      "metadata": {
+        "cpu_utilization_pct": 95,
+        "query_hash": "0xABCDEF123"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:02:30Z",
+      "level": "WARN",
+      "layer": "app",
+      "service_id": "payment-api",
+      "message": "Analytics database write latency exceeded threshold. Write operation to 'shared-analytics-db' took 850ms (threshold 200ms).",
+      "metadata": {
+        "database_id": "shared-analytics-db",
+        "latency_ms": 850,
+        "operation": "WRITE"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:02:45Z",
+      "level": "WARN",
+      "layer": "database",
+      "service_id": "shared-analytics-db",
+      "message": "Connection pool for 'shared-analytics-db' is nearly exhausted. Active connections: 98/100.",
+      "metadata": {
+        "active_connections": 98,
+        "max_connections": 100
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:03:00Z",
+      "level": "WARN",
+      "layer": "app",
+      "service_id": "admin-service",
+      "message": "Dashboard data refresh from 'shared-analytics-db' took 12 seconds, exceeding display timeout.",
+      "metadata": {
+        "database_id": "shared-analytics-db",
+        "latency_s": 12,
+        "report_id": "daily_kpis"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:03:15Z",
+      "level": "ERROR",
+      "layer": "database",
+      "service_id": "shared-analytics-db",
+      "message": "FATAL: remaining connection slots are reserved for non-replication superuser connections. No more connections can be made.",
+      "metadata": {
+        "error_code": "53300",
+        "database_status": "connection_rejected"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:03:30Z",
+      "level": "ERROR",
+      "layer": "app",
+      "service_id": "payment-api",
+      "message": "Failed to log transaction event to 'shared-analytics-db'. Database connection timed out after 10 seconds. Payment processing for ORD-654322 might be incomplete.",
+      "metadata": {
+        "order_id": "ORD-654322",
+        "database_id": "shared-analytics-db",
+        "error_type": "DB_CONNECTION_TIMEOUT"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:03:40Z",
+      "level": "ERROR",
+      "layer": "app",
+      "service_id": "reporting-api",
+      "message": "Report generation failed for 'Heavy User Behavior Analysis'. Query cancelled due to resource limits.",
+      "metadata": {
+        "report_name": "Heavy User Behavior Analysis",
+        "reason": "QUERY_RESOURCE_EXHAUSTION"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:03:45Z",
+      "level": "ERROR",
+      "layer": "app",
+      "service_id": "web-frontend",
+      "message": "Payment processing failed for user_id: 12346. Error from 'payment-api': 'Payment service unavailable, please try again'.",
+      "metadata": {
+        "user_id": "12346",
+        "api_error": "Payment service unavailable",
+        "http_status": 500
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:04:00Z",
+      "level": "ERROR",
+      "layer": "infrastructure",
+      "service_id": "api-gateway-prod",
+      "message": "Gateway timeout (504) when connecting to 'payment-api' for request /api/payments/charge. Upstream service did not respond in time.",
+      "metadata": {
+        "target_service": "payment-api",
+        "status_code": 504,
+        "path": "/api/payments/charge"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:04:10Z",
+      "level": "ERROR",
+      "layer": "infrastructure",
+      "service_id": "api-gateway-internal",
+      "message": "Upstream error (500) from 'admin-service' for request /admin/dashboard. Root cause: database query timeout.",
+      "metadata": {
+        "target_service": "admin-service",
+        "status_code": 500,
+        "path": "/admin/dashboard"
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:04:15Z",
+      "level": "ERROR",
+      "layer": "app",
+      "service_id": "payment-api",
+      "message": "CRITICAL: Multiple payment transactions are failing due to persistent connectivity issues with 'shared-analytics-db'. Manual intervention required.",
+      "metadata": {
+        "severity": "P0",
+        "failed_transactions_count": 15
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:04:30Z",
+      "level": "ALERT",
+      "layer": "monitoring",
+      "service_id": "payment-api",
+      "message": "ALERT: P0 - Payment API Error Rate Exceeded SLO (current: 35%, SLO: 1%). Impacting multiple users. Investigate 'payment-api' and 'shared-analytics-db'.",
+      "metadata": {
+        "metric": "error_rate_pct",
+        "current_value": 35,
+        "threshold": 1,
+        "slo_breach": true
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:04:31Z",
+      "level": "ALERT",
+      "layer": "monitoring",
+      "service_id": "shared-analytics-db",
+      "message": "ALERT: P0 - Shared Analytics DB: High CPU (99%) & Connection Saturation (100%). Immediate action required.",
+      "metadata": {
+        "metric": "cpu_utilization_pct",
+        "current_value": 99,
+        "connections_used": 100,
+        "connections_max": 100,
+        "slo_breach": true
+      }
+    },
+    {
+      "timestamp": "2026-03-26T09:04:45Z",
+      "level": "FATAL",
+      "layer": "app",
+      "service_id": "payment-api",
+      "message": "System halted payment processing for all new orders. Unable to guarantee data integrity due to 'shared-analytics-db' unavailability. Emergency shutdown initiated.",
+      "metadata": {
+        "shutdown_reason": "ANALYTICS_DB_CRITICAL_FAILURE",
+        "impact": "All new payments",
+        "criticality": "P0"
+      }
+    }
+  ]
+}
