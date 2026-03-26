@@ -1,94 +1,57 @@
-# Realistic Log Generator for Incident Detection
+# Realistic Log Generator for Incident Detection (LLM-Powered)
 
-This tool generates **realistic, correlated log batches** designed to test Incident Detection Systems, SIEMs, and SRE dashboards. Unlike simple random log generators, this tool simulates complete "Incident Stories" with a coherent timeline across Application, Database, Infrastructure, and Monitoring layers.
+This tool generates **realistic, graph-aware, and correlated log streams** designed to test the AI-powered ITSM Agent. It has recently been upgraded from a static, rule-based batch generator to a dynamic, LLM-powered event-driven architecture using Gemini.
 
 ## 🚀 Features
 
--   **Story-Based Generation**: Logs follow a defined script (Normal -> Degradation -> Failure -> Recovery).
--   **Multi-Layer Correlation**: Events are synchronized across multiple log files.
-    -   *Example*: A slow DB query (database.log) causes high App latency (application.log), triggering a Prometheus alert (monitoring.log) and eventually an OOM Kill (infrastructure.log).
--   **Structured Output**: Each run produces a self-contained folder with a `metadata.json` "Answer Key".
+-   **Graph-Aware Generation**: Reads the actual Neo4j infrastructure topology (`seed_graph.cypher`) so all generated logs reflect real services, databases, and structural dependencies.
+-   **LLM-Powered Scenarios**: Uses Gemini to autonomously craft tricky incident storylines. Every run produces a unique, chronologically correct incident without manual scripting.
+-   **Multi-Layer Correlation**: Events are synchronized across Application, Database, Infrastructure, and Monitoring layers.
+-   **Real-Time Streaming**: Emits logs as JSON Lines (NDJSON) observing actual timestamp deltas simulating live traffic.
+-   **Intelligent Listener**: Actively monitors the stream, buffers logs, detects critical incident thresholds, and auto-invokes the ITSM Agent with a clean payload.
 
 ## 📦 Usage
 
 ### Prerequisites
--   Python 3.6+
--   No external dependencies required (Standard Library only).
+-   Python 3.10+
+-   `google-generativeai` installed
+-   `dotenv` installed
+-   A valid `GEMINI_API_KEY` in the `agent/.env` file.
 
-### Running the Tool
-Open a terminal in the project folder and run:
+### Running the Pipeline
+
+The new architecture is broken into three modular scripts. You can run them individually or pipe them together for the full end-to-end experience.
+
+#### 1. Generate an Incident Batch
+```bash
+python generator.py
+```
+*What it does:* Reads the Neo4j graph, prompts Gemini for an incident (stopping at the peak with no recovery logs), and saves the raw log array to `generated_logs/raw_batch_INC-YYYY-XXXX.json`.
+
+#### 2. Stream the Logs
+```bash
+python streamer.py -f generated_logs/raw_batch_INC-YYYY-XXXX.json --speed 1.0
+```
+*What it does:* Reads the generated batch and emits it to `stdout` line-by-line, sleeping between lines to match the actual timestamp differentials. Use `--speed 50` to speed it up.
+
+#### 3. Run the Full End-to-End Pipeline
+Pipe the streamer directly into the listener to watch the system detect the incident and trigger the ITSM agent entirely automatically:
 
 ```bash
-# Generate ALL available batches
-python main.py --batch all
-
-# Generate a specific batch
-python main.py --batch batch_001
-python main.py --batch batch_004
-
-# List available batches
-python main.py --list
+python streamer.py -f generated_logs/raw_batch_INC-YYYY-XXXX.json --speed 50 | python listener.py
 ```
 
-### Output
-Logs are generated in the `generated_batches/` directory.
-Example structure:
-```
-generated_batches/
-└── batch_001_database_timeout/
-    ├── metadata.json       # Incident details, root cause, and timeline
-    ├── application.log     # API requests, errors, stack traces
-    ├── database.log        # Slow queries, connection pool errors
-    ├── infrastructure.log  # K8s events, container restarts
-    └── monitoring.log      # Simulated alerts (HighLatency, ErrorRateSpike)
-```
+*What the listener does:* 
+1. Consumes the stream.
+2. Keeps a rolling buffer of logs.
+3. If it detects a predefined threshold (e.g., 3 ERRORs or 1 ALERT), it packages the buffer into the required ITSM format (`app_logs`, `database_logs`, etc.).
+4. Saves it to `../agent/data/logs.json`.
+5. Spawns `python main.py` in the `agent` directory to resolve the ticket.
 
-## 🧪 Included Scenarios
+## 🛠️ Components
 
-The tool comes with 4 enterprise-grade scenarios:
+-   **`generator.py` (The Producer)**: The LLM brain. Contains the strict Pydantic schemas and system prompts ensuring Gemini outputs perfect incident JSON batches.
+-   **`streamer.py` (The Broker)**: The time-simulation script. Translates a static JSON array into a live, flowing stream of NDJSON events.
+-   **`listener.py` (The Consumer)**: The "PagerDuty" equivalent. Sniffs the stream for anomalies and wakes up the ITSM agent when things break.
 
-1.  **Database Timeout (`batch_001`)**: 
-    -   Slow queries exhaust the connection pool.
-    -   App fails with 503 errors.
-    -   Monitoring alerts on high latency.
-2.  **Memory Leak (`batch_002`)**:
-    -   App memory usage creeps up over time.
-    -   Performance degrades.
-    -   Infrastructure layer kills the container (OOMKilled).
-    -   Service auto-restarts.
-3.  **Downstream Failure (`batch_003`)**:
-    -   External Payment Provider becomes slow/unresponsive.
-    -   Gateway logs 502/504 errors.
-    -   App retries fail.
-4.  **Disk Full (`batch_004`)**:
-    -   Node disk usage hits 98%.
-    -   Write operations fail.
-    -   Log rotation/cleanup triggers recovery.
-
-## 🛠️ How It Works (Development Guide)
-
-### Core Components
--   **`main.py`**: Entry point. Parses CLI args and dispatches to the batch engine.
--   **`simulator/batch_engine.py`**: The "Director". It maintains a virtual clock (`engine.tick(seconds)`) and holds references to all loggers. It allows scripts to jump forward in time to exact moments.
--   **`simulator/components.py`**: Classes (`AppLogger`, `DBLogger`, etc.) that handle timestamp formatting and writing to files.
--   **`batches/definitions.py`**: **This is where the magic happens.** This file contains the "scripts" for each scenario.
-
-### How to Add a New Batch
-1.  Open `batches/definitions.py`.
-2.  Define a new function, e.g., `run_batch_005_network_partition()`.
-3.  Use the `engine` to tell your story:
-    ```python
-    def run_batch_005_network_partition():
-        engine = BatchEngine("batch_005_network_partition", "2026-03-01T10:00:00Z")
-        engine.set_metadata({...})
-
-        # 1. Normal Traffic
-        engine.generate_nominal_requests("my-service", count=5)
-        
-        # 2. Advance time 5 minutes
-        engine.tick(300)
-        
-        # 3. Log an event
-        engine.infra.log(engine.get_time(), "network", "Switch port flutter detected")
-    ```
-4.  Register your function in `main.py` inside the `BATCHES` dictionary.
+*(Note: The legacy rule-based tools, `main.py` and `batches/`, are preserved but the primary path is now this dynamic pipeline).*

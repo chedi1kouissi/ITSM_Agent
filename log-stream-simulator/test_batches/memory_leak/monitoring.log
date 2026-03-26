@@ -1,3 +1,0 @@
-2026-02-05T11:02:58Z ALERT HighMemory service=inventory-api memory=92%
-2026-02-05T11:04:48Z ALERT ServiceRestartDetected service=inventory-api
-2026-02-05T11:05:28Z ALERT MemoryNormalized service=inventory-api memory=45%

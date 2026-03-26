@@ -1,7 +1,0 @@
-{
-  "incident_id": "INC-003",
-  "title": "External Payment Provider Failure",
-  "root_cause": "downstream_api_timeout",
-  "affected_service": "payment-api",
-  "severity": "high"
-}

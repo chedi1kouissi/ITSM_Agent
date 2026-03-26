@@ -1,5 +1,0 @@
-2026-02-05T12:00:00Z INFO payment-api Payment processed latency=300ms
-2026-02-05T12:02:15Z WARN payment-api External API slow latency=2500ms
-2026-02-05T12:03:22Z ERROR payment-api Payment failed upstream timeout
-2026-02-05T12:03:40Z ERROR payment-api Retry attempt failed request_id=req_502
-2026-02-05T12:06:10Z INFO payment-api External API responding normally

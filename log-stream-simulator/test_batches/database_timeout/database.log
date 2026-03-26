@@ -1,5 +1,0 @@
-2026-02-05T10:01:18Z DB WARNING Slow query execution_time=3.2s query="SELECT * FROM payments"
-2026-02-05T10:03:45Z DB WARNING Connection usage high active_connections=145 max=150
-2026-02-05T10:03:58Z DB ERROR Connection pool exhausted active_connections=150 max=150
-2026-02-05T10:03:59Z DB ERROR Query timeout execution_time=7.8s
-
