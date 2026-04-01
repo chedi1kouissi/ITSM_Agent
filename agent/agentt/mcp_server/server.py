@@ -21,7 +21,7 @@ mcp = FastMCP("ITSM Agent Tools")
 
 
 # ============================================================================
-# GRAPH TOPOLOGY TOOLS (3 focused tools replacing the old get_app_topology)
+# GRAPH TOPOLOGY TOOLS
 # ============================================================================
 
 @mcp.tool()
@@ -250,17 +250,7 @@ def initialize_incident(incident_id: str, app_id: str = "", initial_summary: str
             initial_summary or "Incident initialized"
         ))
         
-        cur.execute("""
-            INSERT INTO agent_actions (incident_id, app_id, action_type, input_params, output_result)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (
-            incident_id,
-            app_id or None,
-            "initialize_incident",
-            json.dumps({"summary": initial_summary}),
-            json.dumps({"status": "success"})
-        ))
-        
+      
         conn.commit()
         return f"✅ Incident {incident_id} initialized."
         
@@ -315,15 +305,7 @@ def add_evidence(incident_id: str, evidence_items: List[Dict[str, Any]]) -> str:
             ))
             saved_count += 1
         
-        cur.execute("""
-            INSERT INTO agent_actions (incident_id, action_type, input_params, output_result)
-            VALUES (%s, %s, %s, %s)
-        """, (
-            incident_id,
-            "add_evidence",
-            json.dumps({"count": saved_count}),
-            json.dumps({"status": "success", "items_saved": saved_count})
-        ))
+       
         
         conn.commit()
         return f"✅ Added {saved_count} evidence items to {incident_id}."
@@ -377,16 +359,6 @@ def add_recovery_steps(incident_id: str, steps: List[Dict[str, Any]]) -> str:
             ))
             saved_count += 1
         
-        cur.execute("""
-            INSERT INTO agent_actions (incident_id, action_type, input_params, output_result)
-            VALUES (%s, %s, %s, %s)
-        """, (
-            incident_id,
-            "add_recovery_steps",
-            json.dumps({"count": saved_count}),
-            json.dumps({"status": "success", "steps_saved": saved_count})
-        ))
-        
         conn.commit()
         return f"✅ Added {saved_count} recovery steps to {incident_id}."
         
@@ -415,7 +387,7 @@ def finalize_incident(
     - risk_score: INTEGER
     - recovery_plan: TEXT
     - agent_notes: TEXT - complete analysis
-    - app_id: VARCHAR(50) - optional, logged in agent_actions
+    - app_id: VARCHAR(50) 
     
     Args:
         incident_id: Existing incident ID
@@ -446,17 +418,7 @@ def finalize_incident(
             incident_id
         ))
         
-        cur.execute("""
-            INSERT INTO agent_actions (incident_id, app_id, action_type, input_params, output_result, agent_reasoning)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (
-            incident_id,
-            app_id or None,
-            "finalize_incident",
-            json.dumps({"risk_score": risk_score}),
-            json.dumps({"status": "success"}),
-            agent_notes
-        ))
+        
         
         conn.commit()
         return f"✅ Incident {incident_id} finalized with risk score {risk_score}."
@@ -535,131 +497,3 @@ def calculate_risk_score(plan_text: str) -> int:
             matched_low.append(word)
 
     return min(risk_score, 100)
-
-
-@mcp.tool()
-def log_agent_action(
-    incident_id: str,
-    action_type: str,
-    input_params: Dict[str, Any],
-    output_result: Dict[str, Any],
-    reasoning: str = "",
-    observation: str = "",
-    app_id: str = ""
-) -> str:
-    """
-    Manually logs an agent action for audit purposes.
-    Most tools auto-log, but use this for custom actions.
-    
-    Args:
-        incident_id: Related incident ID (optional)
-        action_type: Type of action (e.g., "web_search", "analysis")
-        input_params: What the agent provided as input
-        output_result: What was returned
-        reasoning: Why the agent took this action
-        observation: What the agent learned from the result
-        app_id: Optional app identifier associated with this action
-    """
-    conn = get_db_connection()
-    if not conn:
-        return "Error: Could not connect to database."
-
-    try:
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO agent_actions (
-                incident_id,
-                app_id,
-                action_type,
-                input_params,
-                output_result,
-                agent_reasoning,
-                observation
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (
-            incident_id or None,
-            app_id or None,
-            action_type,
-            json.dumps(input_params),
-            json.dumps(output_result),
-            reasoning,
-            observation
-        ))
-        
-        conn.commit()
-        return f"✅ Action logged: {action_type}"
-        
-    except Exception as e:
-        conn.rollback()
-        return f"❌ Error: {str(e)}"
-    finally:
-        cur.close()
-        conn.close()
-
-
-if __name__ == "__main__":
-    mcp.run()
-    
-    
-    
-    
-# ============================================================================
-# WORKFLOW TOOL - Recommended for most cases
-# ============================================================================
-    
-@mcp.tool()
-def create_incident_workflow(
-    app_id: str,
-    incident_id: str,
-    evidence_items: List[Dict[str, Any]],
-    recovery_plan: str,
-    recovery_steps: List[Dict[str, Any]],
-    risk_score: int,
-    agent_notes: str
-) -> str:
-    """
-    Saves a complete ITSM ticket. 
-    evidence_items format: [{'log_line': '...', 'source': 'app', 'timestamp': '...', 'reasoning': '...'}]
-    recovery_steps format: [{'step_order': 1, 'step_description': '...', 'risk_level': 'MEDIUM'}]
-    """
-    conn = get_db_connection()
-    if not conn: return "Error: DB connection failed"
-
-    try:
-        cur = conn.cursor()
-        # 1. Create Incident
-        cur.execute("""
-            INSERT INTO incidents (app_id, incident_id, status, risk_score, recovery_plan, agent_notes)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (incident_id) DO UPDATE SET app_id = EXCLUDED.app_id, status = 'OPEN'
-        """, (app_id, incident_id, "OPEN", risk_score, recovery_plan, agent_notes))
-
-        # 2. Bulk Insert Evidence
-        for item in evidence_items:
-            cur.execute("""
-                INSERT INTO evidence (incident_id, log_line, source, timestamp, reasoning)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (incident_id, item.get("log_line"), item.get("source"), item.get("timestamp"), item.get("reasoning")))
-
-        # 3. Bulk Insert Recovery Steps
-        for step in recovery_steps:
-            cur.execute("""
-                INSERT INTO recovery_steps (incident_id, step_order, step_description, risk_level)
-                VALUES (%s, %s, %s, %s)
-            """, (incident_id, step.get("step_order"), step.get("step_description"), step.get("risk_level", "MEDIUM")))
-
-        # 4. Audit Agent Action
-        cur.execute("""
-            INSERT INTO agent_actions (app_id, incident_id, action_type, input_params, agent_reasoning)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (app_id, incident_id, "create_incident_workflow", json.dumps({"evidence_count": len(evidence_items)}), agent_notes))
-
-        conn.commit()
-        return f"✅ Ticket {incident_id} created in DB for App {app_id}."
-    except Exception as e:
-        conn.rollback()
-        return f"❌ DB Transaction Failed: {str(e)}"
-    finally:
-        cur.close()
-        conn.close()

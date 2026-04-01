@@ -3,6 +3,20 @@ import uuid
 import os
 from datetime import datetime, timezone
 from agentt.graph import app
+from langfuse import Langfuse
+from langfuse.callback import CallbackHandler
+from dotenv import load_dotenv
+load_dotenv()
+
+# Initialize Langfuse client (reads LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY from env)
+langfuse = Langfuse(
+    host="https://cloud.langfuse.com"
+)
+
+# Initialize Langfuse CallbackHandler for Langchain tracing
+langfuse_handler = CallbackHandler(
+    host="https://cloud.langfuse.com"
+)
 
 RUN_LOGS_DIR = "data/run_logs"
 
@@ -40,7 +54,19 @@ def run_agent():
     print("🤖 Initializing Agent...")
     print("="*60)
 
-    # 3. Define Initial State
+    # 3. Create a Langfuse trace for this agent run
+    trace = langfuse.trace(
+        name="itsm-agent-run",
+        id=incident_id,          # use incident_id as trace ID for easy lookup
+        input={"incident_id": incident_id, "app_id": app_id},
+        tags=["itsm", "agent"],
+        metadata={"app_id": app_id}
+    )
+
+    # Attach trace context to the callback handler
+    langfuse_handler.trace_id = trace.id
+
+    # 4. Define Initial State
     initial_state = {
         "messages": [
             ("user", f"""Incident ID: {incident_id}
@@ -66,7 +92,7 @@ Use incident_id="{incident_id}" and app_id="{app_id}" for ALL database operation
         "ticket_status": "analyzing"
     }
 
-    # 4. Run the Graph and capture a full run log
+    # 5. Run the Graph and capture a full run log
     print("\n🔄 Starting Agent Execution...\n")
 
     run_log = {
@@ -79,25 +105,32 @@ Use incident_id="{incident_id}" and app_id="{app_id}" for ALL database operation
     }
 
     try:
-        for event in app.stream(initial_state):
+        for event in app.stream(
+            initial_state,
+            config={"callbacks": [langfuse_handler]}  # 👈 attach tracing to every LLM/tool call
+        ):
             for key, value in event.items():
                 print(f"┌─ Node: {key} " + "─"*(50 - len(key)))
+
+                # Create a Langfuse span per node
+                span = trace.span(
+                    name=f"node:{key}",
+                    metadata={"node": key}
+                )
 
                 event_entry = {
                     "node": key,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "tool_calls": [],
-                    "llm_reasoning": None,    # LLM thought text (even during tool calls)
-                    "response_preview": None  # Final response text (no tool calls)
+                    "llm_reasoning": None,
+                    "response_preview": None
                 }
 
                 if "messages" in value:
                     last_msg = value["messages"][-1]
 
-                    # Always capture any text content the LLM produced (reasoning)
                     if hasattr(last_msg, "content") and last_msg.content:
                         content = last_msg.content
-                        # content can be a list of dicts (Gemini) or a plain string
                         if isinstance(content, list):
                             text_parts = [
                                 p.get("text", "") for p in content
@@ -118,7 +151,6 @@ Use incident_id="{incident_id}" and app_id="{app_id}" for ALL database operation
                                 "args": tool_call.get("args", {})
                             })
                     elif hasattr(last_msg, "content") and last_msg.content:
-                        # Pure response (no tool call) — store as preview too
                         if event_entry["llm_reasoning"]:
                             preview = event_entry["llm_reasoning"]
                             if len(str(last_msg.content)) > 200:
@@ -127,12 +159,19 @@ Use incident_id="{incident_id}" and app_id="{app_id}" for ALL database operation
                                 print(f"│ 💬 Response: {str(last_msg.content)}")
                             event_entry["response_preview"] = preview
 
-                    # Capture tool results only on 'tools' nodes (ToolMessage)
                     if key == "tools" and hasattr(last_msg, "name"):
-                        event_entry["tool_result"] = {
+                        tool_result = {
                             "tool_name": getattr(last_msg, "name", None),
                             "content": str(last_msg.content)[:1000]
                         }
+                        event_entry["tool_result"] = tool_result
+                        span.update(output=tool_result)
+
+                # End the span with captured output
+                span.end(output={
+                    "tool_calls": event_entry["tool_calls"],
+                    "llm_reasoning": event_entry["llm_reasoning"]
+                })
 
                 print("└" + "─"*56)
                 print()
@@ -140,6 +179,11 @@ Use incident_id="{incident_id}" and app_id="{app_id}" for ALL database operation
                 run_log["events"].append(event_entry)
 
         run_log["status"] = "completed"
+        trace.update(
+            output={"status": "completed", "incident_id": incident_id},
+            metadata={"total_nodes": len(run_log["events"])}
+        )
+
         print("="*60)
         print(f"✅ Agent execution completed for {incident_id}")
         print("="*60)
@@ -147,6 +191,10 @@ Use incident_id="{incident_id}" and app_id="{app_id}" for ALL database operation
     except Exception as e:
         run_log["status"] = "failed"
         run_log["error"] = str(e)
+        trace.update(
+            output={"status": "failed", "error": str(e)},
+            level="ERROR"
+        )
         print(f"❌ Error during execution: {str(e)}")
         import traceback
         traceback.print_exc()
@@ -154,7 +202,10 @@ Use incident_id="{incident_id}" and app_id="{app_id}" for ALL database operation
     finally:
         run_log["finished_at"] = datetime.now(timezone.utc).isoformat()
 
-        # 5. Write run log to data/run_logs/<incident_id>.json
+        # Flush all pending Langfuse events before exit
+        langfuse.flush()
+
+        # 6. Write run log to data/run_logs/<incident_id>.json
         os.makedirs(RUN_LOGS_DIR, exist_ok=True)
         log_output_path = os.path.join(RUN_LOGS_DIR, f"{incident_id}.json")
         with open(log_output_path, "w") as f:

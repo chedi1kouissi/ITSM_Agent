@@ -1,20 +1,20 @@
 {
   "incident_id": "INC-2026-0006",
   "app_id": "ecommerce-prod",
-  "started_at": "2026-03-23T12:20:05.136491+00:00",
-  "finished_at": "2026-03-23T12:20:47.960159+00:00",
+  "started_at": "2026-03-25T15:04:38.499902+00:00",
+  "finished_at": "2026-03-25T15:05:18.706952+00:00",
   "status": "completed",
   "events": [
     {
       "node": "agent",
-      "timestamp": "2026-03-23T12:20:09.794554+00:00",
+      "timestamp": "2026-03-25T15:04:43.496089+00:00",
       "tool_calls": [
         {
           "name": "initialize_incident",
           "args": {
-            "incident_id": "INC-2026-0006",
-            "initial_summary": "Payment service experiencing failures due to database connection saturation, leading to API timeouts and 504 errors.",
-            "app_id": "ecommerce-prod"
+            "initial_summary": "Payment service experiencing timeouts due to database connection saturation, leading to 504 Gateway Timeouts.",
+            "app_id": "ecommerce-prod",
+            "incident_id": "INC-2026-0006"
           }
         }
       ],
@@ -23,7 +23,7 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-03-23T12:20:09.857349+00:00",
+      "timestamp": "2026-03-25T15:04:43.591187+00:00",
       "tool_calls": [],
       "llm_reasoning": "\u2705 Incident INC-2026-0006 initialized.",
       "response_preview": "\u2705 Incident INC-2026-0006 initialized.",
@@ -34,7 +34,7 @@
     },
     {
       "node": "agent",
-      "timestamp": "2026-03-23T12:20:11.132830+00:00",
+      "timestamp": "2026-03-25T15:04:44.836439+00:00",
       "tool_calls": [
         {
           "name": "get_service_dependencies",
@@ -48,7 +48,7 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-03-23T12:20:11.169189+00:00",
+      "timestamp": "2026-03-25T15:04:45.866591+00:00",
       "tool_calls": [],
       "llm_reasoning": "=== SERVICE DEPENDENCY MAP: ecommerce-prod ===\n\n-- Direct Dependencies (Hop 1) --\n  Service:catalog-api [P1] --[WRITES_TO: latency_slo_ms=50, pool_size=30]--> Database:catalog-db [P1]\n  Service:catalog-api [P1] --[READS_FROM: latency_slo_ms=30, pool_size=30]--> Database:catalog-db [P1]\n  Service:catalog-api [P1] --[READS_FROM: use_case=product-cache, ttl_seconds=300]--> Infrastructure:redis-cache [P1]\n  Service:payment-api [P0] --[WRITES_TO: latency_slo_ms=50, pool_size=20, orm=SQLAlchemy]--> Database:payment-db [P0]\n  Service:payment-api [P0] --[WRITES_TO: use_case=transaction-events, latency_slo_ms=200, pool_size=5]--> Database:shared-analytics-db [P1]\n  Service:payment-api [P0] --[WRITES_TO: use_case=payment-events, routing_key=payment.completed]--> Infrastructure:rabbitmq-prod [P1]\n  Service:payment-api [P0] --[READS_FROM: latency_slo_ms=50, pool_size=20]--> Database:payment-db [P0]\n  Service:payment-api [P0] --[READS_FROM: use_case=idempotency-keys, latency_slo_ms=5]--> Infrastruc",
       "response_preview": "=== SERVICE DEPENDENCY MAP: ecommerce-prod ===\n\n-- Direct Dependencies (Hop 1) --\n  Service:catalog-api [P1] --[WRITES_TO: latency_slo_ms=50, pool_size=30]--> Database:catalog-db [P1]\n  Service:catalog-api [P1] --[READS_FROM: latency_slo_ms=30, pool_size=30]--> Database:catalog-db [P1]\n  Service:catalog-api [P1] --[READS_FROM: use_case=product-cache, ttl_seconds=300]--> Infrastructure:redis-cache [P1]\n  Service:payment-api [P0] --[WRITES_TO: latency_slo_ms=50, pool_size=20, orm=SQLAlchemy]--> Database:payment-db [P0]\n  Service:payment-api [P0] --[WRITES_TO: use_case=transaction-events, latency_slo_ms=200, pool_size=5]--> Database:shared-analytics-db [P1]\n  Service:payment-api [P0] --[WRITES_TO: use_case=payment-events, routing_key=payment.completed]--> Infrastructure:rabbitmq-prod [P1]\n  Service:payment-api [P0] --[READS_FROM: latency_slo_ms=50, pool_size=20]--> Database:payment-db [P0]\n  Service:payment-api [P0] --[READS_FROM: use_case=idempotency-keys, latency_slo_ms=5]--> Infrastruc",
@@ -59,7 +59,7 @@
     },
     {
       "node": "agent",
-      "timestamp": "2026-03-23T12:20:12.484019+00:00",
+      "timestamp": "2026-03-25T15:04:47.205930+00:00",
       "tool_calls": [
         {
           "name": "get_blast_radius",
@@ -73,7 +73,7 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-03-23T12:20:12.619320+00:00",
+      "timestamp": "2026-03-25T15:04:47.465111+00:00",
       "tool_calls": [],
       "llm_reasoning": "=== BLAST RADIUS: payment-db ===\n\nFailing resource: Database:payment-db\nAffected services (1 unique):\n\n  [P0] Service:payment-api  (app=ecommerce-prod Tier-1, team=payments-team)  via [WRITES_TO, READS_FROM]",
       "response_preview": "=== BLAST RADIUS: payment-db ===\n\nFailing resource: Database:payment-db\nAffected services (1 unique):\n\n  [P0] Service:payment-api  (app=ecommerce-prod Tier-1, team=payments-team)  via [WRITES_TO, READS_FROM]",
@@ -84,7 +84,7 @@
     },
     {
       "node": "agent",
-      "timestamp": "2026-03-23T12:20:13.678844+00:00",
+      "timestamp": "2026-03-25T15:04:53.092830+00:00",
       "tool_calls": [
         {
           "name": "get_infrastructure_routes",
@@ -98,7 +98,7 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-03-23T12:20:13.685640+00:00",
+      "timestamp": "2026-03-25T15:04:53.273986+00:00",
       "tool_calls": [],
       "llm_reasoning": "=== INFRASTRUCTURE ROUTES: ecommerce-prod ===\n\n  Infrastructure:api-gateway-prod (Gateway, host=nginx-prod-01, timeout=30000ms, [P0])\n    --[ROUTES_TO: protocol=HTTPS, timeout_ms=30000]--> Service:web-frontend [P1]\n  Infrastructure:api-gateway-prod (Gateway, host=nginx-prod-01, timeout=30000ms, [P0])\n    --[ROUTES_TO: protocol=HTTPS, timeout_ms=30000, path_prefix=/api/payments]--> Service:payment-api [P0]",
       "response_preview": "=== INFRASTRUCTURE ROUTES: ecommerce-prod ===\n\n  Infrastructure:api-gateway-prod (Gateway, host=nginx-prod-01, timeout=30000ms, [P0])\n    --[ROUTES_TO: protocol=HTTPS, timeout_ms=30000]--> Service:web-frontend [P1]\n  Infrastructure:api-gateway-prod (Gateway, host=nginx-prod-01, timeout=30000ms, [P0])\n    --[ROUTES_TO: protocol=HTTPS, timeout_ms=30000, path_prefix=/api/payments]--> Service:payment-api [P0]",
@@ -109,7 +109,7 @@
     },
     {
       "node": "agent",
-      "timestamp": "2026-03-23T12:20:21.269909+00:00",
+      "timestamp": "2026-03-25T15:04:58.987799+00:00",
       "tool_calls": [
         {
           "name": "add_evidence",
@@ -117,125 +117,125 @@
             "incident_id": "INC-2026-0006",
             "evidence_items": [
               {
-                "reasoning": "Indicates payment-api is struggling to get database connections.",
-                "timestamp": "2026-02-05T12:02:15Z",
+                "source": "app",
                 "log_line": {
-                  "timestamp": "2026-02-05T12:02:15Z",
-                  "service_id": "payment-api",
+                  "metadata": {},
                   "message": "Slow response from database connection pool",
                   "level": "WARN",
-                  "metadata": {}
-                },
-                "source": "app"
-              },
-              {
-                "source": "app",
-                "reasoning": "Direct failure in payment processing due to upstream (database) timeout.",
-                "timestamp": "2026-02-05T12:03:22Z",
-                "log_line": {
-                  "timestamp": "2026-02-05T12:03:22Z",
                   "service_id": "payment-api",
-                  "message": "Payment failed: upstream timeout during WRITES_TO operation",
-                  "level": "ERROR",
-                  "metadata": {}
-                }
-              },
-              {
-                "reasoning": "Further evidence of payment-api being unresponsive due to upstream issues.",
-                "timestamp": "2026-02-05T12:03:40Z",
-                "log_line": {
-                  "message": "Context deadline exceeded",
-                  "timestamp": "2026-02-05T12:03:40Z",
-                  "service_id": "payment-api",
-                  "metadata": {
-                    "request_id": "req_502"
-                  },
-                  "level": "ERROR"
+                  "timestamp": "2026-02-05T12:02:15Z"
                 },
-                "source": "app"
+                "reasoning": "Initial sign of database performance degradation affecting payment-api.",
+                "timestamp": "2026-02-05T12:02:15Z"
               },
               {
-                "reasoning": "Critical database error indicating connection exhaustion.",
+                "reasoning": "Critical database error indicating connection exhaustion. This is the root cause.",
                 "timestamp": "2026-02-05T12:02:30Z",
-                "log_line": {
-                  "level": "FATAL",
-                  "metadata": {},
-                  "timestamp": "2026-02-05T12:02:30Z",
-                  "service_id": "payment-db",
-                  "message": "Remaining connection slots are reserved for non-replication superuser connections"
-                },
-                "source": "db"
-              },
-              {
                 "source": "db",
-                "reasoning": "Confirms payment-db has reached its maximum connection limit (150 active, 150 max).",
-                "timestamp": "2026-02-05T12:03:10Z",
                 "log_line": {
-                  "level": "ERROR",
-                  "metadata": {
-                    "max_connections": 150,
-                    "active_connections": 150
-                  },
-                  "timestamp": "2026-02-05T12:03:10Z",
+                  "metadata": {},
+                  "message": "Remaining connection slots are reserved for non-replication superuser connections",
+                  "level": "FATAL",
                   "service_id": "payment-db",
-                  "message": "Could not connect: too many clients already"
+                  "timestamp": "2026-02-05T12:02:30Z"
                 }
-              },
-              {
-                "source": "infra",
-                "reasoning": "api-gateway-prod timing out when trying to reach payment-api, likely due to payment-api's unresponsiveness.",
-                "timestamp": "2026-02-05T12:03:30Z",
-                "log_line": {
-                  "level": "ERROR",
-                  "metadata": {
-                    "target": "payment-api:8000"
-                  },
-                  "timestamp": "2026-02-05T12:03:30Z",
-                  "service_id": "api-gateway-prod",
-                  "message": "Upstream timeout"
-                }
-              },
-              {
-                "reasoning": "api-gateway-prod returning 504s, indicating payment-api is not responding within the gateway's timeout (30000ms).",
-                "timestamp": "2026-02-05T12:03:42Z",
-                "log_line": {
-                  "timestamp": "2026-02-05T12:03:42Z",
-                  "service_id": "api-gateway-prod",
-                  "message": "HTTP 504 Gateway Timeout",
-                  "level": "ERROR",
-                  "metadata": {
-                    "path": "/process-payment"
-                  }
-                },
-                "source": "infra"
               },
               {
                 "source": "monitoring",
-                "reasoning": "Monitoring alert confirming 100% database connection usage for payment-db.",
-                "timestamp": "2026-02-05T12:02:40Z",
                 "log_line": {
                   "level": "ALERT",
                   "metadata": {
                     "usage_pct": 100
                   },
-                  "timestamp": "2026-02-05T12:02:40Z",
+                  "message": "DBConnectionSaturation",
                   "service_id": "payment-db",
-                  "message": "DBConnectionSaturation"
+                  "timestamp": "2026-02-05T12:02:40Z"
+                },
+                "reasoning": "Monitoring alert confirming 100% database connection saturation for payment-db.",
+                "timestamp": "2026-02-05T12:02:40Z"
+              },
+              {
+                "reasoning": "Database explicitly states 'too many clients already' with active connections matching max connections.",
+                "timestamp": "2026-02-05T12:03:10Z",
+                "source": "db",
+                "log_line": {
+                  "service_id": "payment-db",
+                  "metadata": {
+                    "active_connections": 150,
+                    "max_connections": 150
+                  },
+                  "message": "Could not connect: too many clients already",
+                  "level": "ERROR",
+                  "timestamp": "2026-02-05T12:03:10Z"
                 }
               },
               {
-                "source": "monitoring",
-                "reasoning": "Monitoring alert showing a significant spike in error rate for payment-api, a direct consequence of the database issue.",
-                "timestamp": "2026-02-05T12:03:35Z",
+                "reasoning": "Payment API failing due to upstream database timeout during write operations, directly caused by DB saturation.",
+                "timestamp": "2026-02-05T12:03:22Z",
+                "source": "app",
                 "log_line": {
-                  "timestamp": "2026-02-05T12:03:35Z",
-                  "service_id": "payment-api",
-                  "message": "ErrorRateSpike",
+                  "timestamp": "2026-02-05T12:03:22Z",
+                  "level": "ERROR",
+                  "metadata": {},
+                  "message": "Payment failed: upstream timeout during WRITES_TO operation",
+                  "service_id": "payment-api"
+                }
+              },
+              {
+                "reasoning": "API Gateway timing out when calling payment-api, a cascading effect of the database issue.",
+                "timestamp": "2026-02-05T12:03:30Z",
+                "source": "infra",
+                "log_line": {
+                  "level": "ERROR",
+                  "metadata": {
+                    "target": "payment-api:8000"
+                  },
+                  "message": "Upstream timeout",
+                  "service_id": "api-gateway-prod",
+                  "timestamp": "2026-02-05T12:03:30Z"
+                }
+              },
+              {
+                "reasoning": "Monitoring alert showing a significant spike in error rate for payment-api.",
+                "timestamp": "2026-02-05T12:03:35Z",
+                "source": "monitoring",
+                "log_line": {
                   "level": "ALERT",
                   "metadata": {
                     "error_rate_pct": 28
-                  }
+                  },
+                  "message": "ErrorRateSpike",
+                  "service_id": "payment-api",
+                  "timestamp": "2026-02-05T12:03:35Z"
                 }
+              },
+              {
+                "timestamp": "2026-02-05T12:03:40Z",
+                "reasoning": "Further evidence of payment-api timeouts due to upstream issues.",
+                "log_line": {
+                  "service_id": "payment-api",
+                  "level": "ERROR",
+                  "metadata": {
+                    "request_id": "req_502"
+                  },
+                  "message": "Context deadline exceeded",
+                  "timestamp": "2026-02-05T12:03:40Z"
+                },
+                "source": "app"
+              },
+              {
+                "timestamp": "2026-02-05T12:03:42Z",
+                "reasoning": "Final symptom: 504 Gateway Timeout experienced by end-users due to the unresponsive payment-api.",
+                "log_line": {
+                  "timestamp": "2026-02-05T12:03:42Z",
+                  "service_id": "api-gateway-prod",
+                  "metadata": {
+                    "path": "/process-payment"
+                  },
+                  "message": "HTTP 504 Gateway Timeout",
+                  "level": "ERROR"
+                },
+                "source": "infra"
               }
             ]
           }
@@ -246,7 +246,7 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-03-23T12:20:21.298938+00:00",
+      "timestamp": "2026-03-25T15:04:59.035888+00:00",
       "tool_calls": [],
       "llm_reasoning": "\u274c Error: can't adapt type 'dict'",
       "response_preview": "\u274c Error: can't adapt type 'dict'",
@@ -257,117 +257,65 @@
     },
     {
       "node": "agent",
-      "timestamp": "2026-03-23T12:20:29.660916+00:00",
+      "timestamp": "2026-03-25T15:05:04.635708+00:00",
       "tool_calls": [
         {
           "name": "add_evidence",
           "args": {
-            "incident_id": "INC-2026-0006",
             "evidence_items": [
               {
-                "reasoning": "Indicates payment-api is struggling to get database connections.",
+                "timestamp": "2026-02-05T12:02:15Z",
                 "log_line": "{\"timestamp\": \"2026-02-05T12:02:15Z\", \"level\": \"WARN\", \"service_id\": \"payment-api\", \"message\": \"Slow response from database connection pool\", \"metadata\": {}}",
-                "source": "app",
-                "timestamp": "2026-02-05T12:02:15Z"
+                "reasoning": "Initial sign of database performance degradation affecting payment-api.",
+                "source": "app"
               },
               {
-                "timestamp": "2026-02-05T12:03:22Z",
-                "log_line": "{\"timestamp\": \"2026-02-05T12:03:22Z\", \"level\": \"ERROR\", \"service_id\": \"payment-api\", \"message\": \"Payment failed: upstream timeout during WRITES_TO operation\", \"metadata\": {}}",
-                "source": "app",
-                "reasoning": "Direct failure in payment processing due to upstream (database) timeout."
-              },
-              {
-                "reasoning": "Further evidence of payment-api being unresponsive due to upstream issues.",
-                "log_line": "{\"timestamp\": \"2026-02-05T12:03:40Z\", \"level\": \"ERROR\", \"service_id\": \"payment-api\", \"message\": \"Context deadline exceeded\", \"metadata\": {\"request_id\": \"req_502\"}}",
-                "source": "app",
-                "timestamp": "2026-02-05T12:03:40Z"
-              },
-              {
+                "reasoning": "Critical database error indicating connection exhaustion. This is the root cause.",
+                "source": "db",
                 "timestamp": "2026-02-05T12:02:30Z",
-                "log_line": "{\"timestamp\": \"2026-02-05T12:02:30Z\", \"level\": \"FATAL\", \"service_id\": \"payment-db\", \"message\": \"Remaining connection slots are reserved for non-replication superuser connections\", \"metadata\": {}}",
-                "source": "db",
-                "reasoning": "Critical database error indicating connection exhaustion."
+                "log_line": "{\"timestamp\": \"2026-02-05T12:02:30Z\", \"level\": \"FATAL\", \"service_id\": \"payment-db\", \"message\": \"Remaining connection slots are reserved for non-replication superuser connections\", \"metadata\": {}}"
               },
               {
-                "reasoning": "Confirms payment-db has reached its maximum connection limit (150 active, 150 max).",
-                "log_line": "{\"timestamp\": \"2026-02-05T12:03:10Z\", \"level\": \"ERROR\", \"service_id\": \"payment-db\", \"message\": \"Could not connect: too many clients already\", \"metadata\": {\"active_connections\": 150, \"max_connections\": 150}}",
-                "source": "db",
-                "timestamp": "2026-02-05T12:03:10Z"
-              },
-              {
-                "timestamp": "2026-02-05T12:03:30Z",
-                "log_line": "{\"timestamp\": \"2026-02-05T12:03:30Z\", \"level\": \"ERROR\", \"service_id\": \"api-gateway-prod\", \"message\": \"Upstream timeout\", \"metadata\": {\"target\": \"payment-api:8000\"}}",
-                "source": "infra",
-                "reasoning": "api-gateway-prod timing out when trying to reach payment-api, likely due to payment-api's unresponsiveness."
-              },
-              {
-                "reasoning": "api-gateway-prod returning 504s, indicating payment-api is not responding within the gateway's timeout (30000ms).",
-                "timestamp": "2026-02-05T12:03:42Z",
-                "log_line": "{\"timestamp\": \"2026-02-05T12:03:42Z\", \"level\": \"ERROR\", \"service_id\": \"api-gateway-prod\", \"message\": \"HTTP 504 Gateway Timeout\", \"metadata\": {\"path\": \"/process-payment\"}}",
-                "source": "infra"
-              },
-              {
-                "log_line": "{\"timestamp\": \"2026-02-05T12:02:40Z\", \"level\": \"ALERT\", \"service_id\": \"payment-db\", \"message\": \"DBConnectionSaturation\", \"metadata\": {\"usage_pct\": 100}}",
+                "reasoning": "Monitoring alert confirming 100% database connection saturation for payment-db.",
                 "source": "monitoring",
                 "timestamp": "2026-02-05T12:02:40Z",
-                "reasoning": "Monitoring alert confirming 100% database connection usage for payment-db."
+                "log_line": "{\"timestamp\": \"2026-02-05T12:02:40Z\", \"level\": \"ALERT\", \"service_id\": \"payment-db\", \"message\": \"DBConnectionSaturation\", \"metadata\": {\"usage_pct\": 100}}"
               },
               {
-                "reasoning": "Monitoring alert showing a significant spike in error rate for payment-api, a direct consequence of the database issue.",
+                "reasoning": "Database explicitly states 'too many clients already' with active connections matching max connections.",
+                "source": "db",
+                "timestamp": "2026-02-05T12:03:10Z",
+                "log_line": "{\"timestamp\": \"2026-02-05T12:03:10Z\", \"level\": \"ERROR\", \"service_id\": \"payment-db\", \"message\": \"Could not connect: too many clients already\", \"metadata\": {\"active_connections\": 150, \"max_connections\": 150}}"
+              },
+              {
+                "reasoning": "Payment API failing due to upstream database timeout during write operations, directly caused by DB saturation.",
+                "source": "app",
+                "timestamp": "2026-02-05T12:03:22Z",
+                "log_line": "{\"timestamp\": \"2026-02-05T12:03:22Z\", \"level\": \"ERROR\", \"service_id\": \"payment-api\", \"message\": \"Payment failed: upstream timeout during WRITES_TO operation\", \"metadata\": {}}"
+              },
+              {
+                "reasoning": "API Gateway timing out when calling payment-api, a cascading effect of the database issue.",
+                "source": "infra",
+                "timestamp": "2026-02-05T12:03:30Z",
+                "log_line": "{\"timestamp\": \"2026-02-05T12:03:30Z\", \"level\": \"ERROR\", \"service_id\": \"api-gateway-prod\", \"message\": \"Upstream timeout\", \"metadata\": {\"target\": \"payment-api:8000\"}}"
+              },
+              {
+                "reasoning": "Monitoring alert showing a significant spike in error rate for payment-api.",
+                "source": "monitoring",
                 "timestamp": "2026-02-05T12:03:35Z",
-                "log_line": "{\"timestamp\": \"2026-02-05T12:03:35Z\", \"level\": \"ALERT\", \"service_id\": \"payment-api\", \"message\": \"ErrorRateSpike\", \"metadata\": {\"error_rate_pct\": 28}}",
-                "source": "monitoring"
-              }
-            ]
-          }
-        }
-      ],
-      "llm_reasoning": null,
-      "response_preview": null
-    },
-    {
-      "node": "tools",
-      "timestamp": "2026-03-23T12:20:29.704857+00:00",
-      "tool_calls": [],
-      "llm_reasoning": "\u2705 Added 9 evidence items to INC-2026-0006.",
-      "response_preview": "\u2705 Added 9 evidence items to INC-2026-0006.",
-      "tool_result": {
-        "tool_name": "add_evidence",
-        "content": "\u2705 Added 9 evidence items to INC-2026-0006."
-      }
-    },
-    {
-      "node": "agent",
-      "timestamp": "2026-03-23T12:20:34.351197+00:00",
-      "tool_calls": [
-        {
-          "name": "add_recovery_steps",
-          "args": {
-            "steps": [
-              {
-                "risk_level": "MEDIUM",
-                "step_description": "Restart the 'payment-api' service to clear stale database connections and allow it to re-establish new ones. This should temporarily alleviate pressure on 'payment-db'.",
-                "step_order": 1
+                "log_line": "{\"timestamp\": \"2026-02-05T12:03:35Z\", \"level\": \"ALERT\", \"service_id\": \"payment-api\", \"message\": \"ErrorRateSpike\", \"metadata\": {\"error_rate_pct\": 28}}"
               },
               {
-                "risk_level": "HIGH",
-                "step_description": "Temporarily increase the 'max_connections' parameter on 'payment-db' from 150 to a higher value (e.g., 200) to accommodate increased connection demand. Monitor database performance closely after this change.",
-                "step_order": 2
+                "reasoning": "Further evidence of payment-api timeouts due to upstream issues.",
+                "source": "app",
+                "timestamp": "2026-02-05T12:03:40Z",
+                "log_line": "{\"timestamp\": \"2026-02-05T12:03:40Z\", \"level\": \"ERROR\", \"service_id\": \"payment-api\", \"message\": \"Context deadline exceeded\", \"metadata\": {\"request_id\": \"req_502\"}}"
               },
               {
-                "risk_level": "LOW",
-                "step_description": "Investigate 'payment-api' application code for potential database connection leaks, unclosed connections, or inefficient query patterns that might be contributing to high connection usage. Review ORM (SQLAlchemy) usage.",
-                "step_order": 3
-              },
-              {
-                "step_order": 4,
-                "risk_level": "LOW",
-                "step_description": "Review and optimize 'payment-api' database connection pooling configuration, ensuring efficient management of its pool_size (currently 20) and connection lifecycle."
-              },
-              {
-                "risk_level": "MEDIUM",
-                "step_description": "Evaluate long-term scaling options for 'payment-db', including vertical scaling (upgrading instance type) or horizontal scaling (read replicas, sharding) if sustained high connection demand is expected.",
-                "step_order": 5
+                "timestamp": "2026-02-05T12:03:42Z",
+                "log_line": "{\"timestamp\": \"2026-02-05T12:03:42Z\", \"level\": \"ERROR\", \"service_id\": \"api-gateway-prod\", \"message\": \"HTTP 504 Gateway Timeout\", \"metadata\": {\"path\": \"/process-payment\"}}",
+                "reasoning": "Final symptom: 504 Gateway Timeout experienced by end-users due to the unresponsive payment-api.",
+                "source": "infra"
               }
             ],
             "incident_id": "INC-2026-0006"
@@ -379,7 +327,59 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-03-23T12:20:34.383226+00:00",
+      "timestamp": "2026-03-25T15:05:04.699810+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "\u2705 Added 9 evidence items to INC-2026-0006.",
+      "response_preview": "\u2705 Added 9 evidence items to INC-2026-0006.",
+      "tool_result": {
+        "tool_name": "add_evidence",
+        "content": "\u2705 Added 9 evidence items to INC-2026-0006."
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-03-25T15:05:08.615071+00:00",
+      "tool_calls": [
+        {
+          "name": "add_recovery_steps",
+          "args": {
+            "incident_id": "INC-2026-0006",
+            "steps": [
+              {
+                "step_order": 1,
+                "risk_level": "MEDIUM",
+                "step_description": "Restart payment-api service instances to clear existing database connections and allow payment-db to recover from saturation. This is a temporary measure to restore service."
+              },
+              {
+                "risk_level": "MEDIUM",
+                "step_description": "Investigate payment-db connection usage patterns. If sustained load is higher than current capacity, consider increasing max_connections on payment-db. Current max_connections is 150.",
+                "step_order": 2
+              },
+              {
+                "step_order": 3,
+                "risk_level": "MEDIUM",
+                "step_description": "Review and adjust the database connection pool_size for payment-api connecting to payment-db. The current configured pool_size is 20. Ensure it aligns with application concurrency and database capacity to prevent future saturation."
+              },
+              {
+                "risk_level": "LOW",
+                "step_description": "Analyze payment-api code for potential database connection leaks or long-running, inefficient queries that might be holding connections open unnecessarily.",
+                "step_order": 4
+              },
+              {
+                "step_order": 5,
+                "step_description": "Verify and enhance monitoring and alerting for payment-db connection utilization to proactively detect and prevent saturation issues.",
+                "risk_level": "LOW"
+              }
+            ]
+          }
+        }
+      ],
+      "llm_reasoning": null,
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-03-25T15:05:08.671339+00:00",
       "tool_calls": [],
       "llm_reasoning": "\u2705 Added 5 recovery steps to INC-2026-0006.",
       "response_preview": "\u2705 Added 5 recovery steps to INC-2026-0006.",
@@ -390,12 +390,12 @@
     },
     {
       "node": "agent",
-      "timestamp": "2026-03-23T12:20:37.777330+00:00",
+      "timestamp": "2026-03-25T15:05:10.403216+00:00",
       "tool_calls": [
         {
           "name": "calculate_risk_score",
           "args": {
-            "plan_text": "1. Restart the 'payment-api' service to clear stale database connections and allow it to re-establish new ones. This should temporarily alleviate pressure on 'payment-db'.\n2. Temporarily increase the 'max_connections' parameter on 'payment-db' from 150 to a higher value (e.g., 200) to accommodate increased connection demand. Monitor database performance closely after this change.\n3. Investigate 'payment-api' application code for potential database connection leaks, unclosed connections, or inefficient query patterns that might be contributing to high connection usage. Review ORM (SQLAlchemy) usage.\n4. Review and optimize 'payment-api' database connection pooling configuration, ensuring efficient management of its pool_size (currently 20) and connection lifecycle.\n5. Evaluate long-term scaling options for 'payment-db', including vertical scaling (upgrading instance type) or horizontal scaling (read replicas, sharding) if sustained high connection demand is expected."
+            "plan_text": "1. Restart payment-api service instances to clear existing database connections and allow payment-db to recover from saturation. This is a temporary measure to restore service. 2. Investigate payment-db connection usage patterns. If sustained load is higher than current capacity, consider increasing max_connections on payment-db. Current max_connections is 150. 3. Review and adjust the database connection pool_size for payment-api connecting to payment-db. The current configured pool_size is 20. Ensure it aligns with application concurrency and database capacity to prevent future saturation. 4. Analyze payment-api code for potential database connection leaks or long-running, inefficient queries that might be holding connections open unnecessarily. 5. Verify and enhance monitoring and alerting for payment-db connection utilization to proactively detect and prevent saturation issues."
           }
         }
       ],
@@ -404,7 +404,7 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-03-23T12:20:37.779703+00:00",
+      "timestamp": "2026-03-25T15:05:10.409008+00:00",
       "tool_calls": [],
       "llm_reasoning": "50",
       "response_preview": "50",
@@ -415,16 +415,16 @@
     },
     {
       "node": "agent",
-      "timestamp": "2026-03-23T12:20:41.898301+00:00",
+      "timestamp": "2026-03-25T15:05:13.127007+00:00",
       "tool_calls": [
         {
           "name": "finalize_incident",
           "args": {
-            "risk_score": 50,
-            "recovery_plan": "1. Restart the 'payment-api' service to clear stale database connections and allow it to re-establish new ones. This should temporarily alleviate pressure on 'payment-db'.\n2. Temporarily increase the 'max_connections' parameter on 'payment-db' from 150 to a higher value (e.g., 200) to accommodate increased connection demand. Monitor database performance closely after this change.\n3. Investigate 'payment-api' application code for potential database connection leaks, unclosed connections, or inefficient query patterns that might be contributing to high connection usage. Review ORM (SQLAlchemy) usage.\n4. Review and optimize 'payment-api' database connection pooling configuration, ensuring efficient management of its pool_size (currently 20) and connection lifecycle.\n5. Evaluate long-term scaling options for 'payment-db', including vertical scaling (upgrading instance type) or horizontal scaling (read replicas, sharding) if sustained high connection demand is expected.",
             "incident_id": "INC-2026-0006",
             "app_id": "ecommerce-prod",
-            "agent_notes": "Root cause identified as 'payment-db' connection saturation (100% usage, 150/150 connections). This led to 'payment-api' experiencing slow responses and timeouts (its database connection pool size is 20), which subsequently caused 'api-gateway-prod' to report upstream timeouts and HTTP 504 Gateway Timeout errors. The recovery plan focuses on immediate mitigation (restarting API, temporarily increasing DB connections) and long-term solutions (code investigation, pooling optimization, database scaling). Blast radius is limited to 'payment-api' within 'ecommerce-prod'."
+            "agent_notes": "The incident was caused by payment-db connection saturation, leading to payment-api timeouts and subsequent 504 Gateway Timeouts from api-gateway-prod. The payment-db reached its max_connections of 150, preventing payment-api (which has a pool_size of 20) from acquiring new connections. The recovery plan focuses on immediate mitigation through service restart, followed by investigation and adjustment of database and application connection configurations, code review, and monitoring enhancements.",
+            "recovery_plan": "1. Restart payment-api service instances to clear existing database connections and allow payment-db to recover from saturation. This is a temporary measure to restore service. 2. Investigate payment-db connection usage patterns. If sustained load is higher than current capacity, consider increasing max_connections on payment-db. Current max_connections is 150. 3. Review and adjust the database connection pool_size for payment-api connecting to payment-db. The current configured pool_size is 20. Ensure it aligns with application concurrency and database capacity to prevent future saturation. 4. Analyze payment-api code for potential database connection leaks or long-running, inefficient queries that might be holding connections open unnecessarily. 5. Verify and enhance monitoring and alerting for payment-db connection utilization to proactively detect and prevent saturation issues.",
+            "risk_score": 50
           }
         }
       ],
@@ -433,7 +433,7 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-03-23T12:20:41.933664+00:00",
+      "timestamp": "2026-03-25T15:05:13.190782+00:00",
       "tool_calls": [],
       "llm_reasoning": "\u2705 Incident INC-2026-0006 finalized with risk score 50.",
       "response_preview": "\u2705 Incident INC-2026-0006 finalized with risk score 50.",
@@ -444,10 +444,10 @@
     },
     {
       "node": "agent",
-      "timestamp": "2026-03-23T12:20:47.959136+00:00",
+      "timestamp": "2026-03-25T15:05:18.698952+00:00",
       "tool_calls": [],
-      "llm_reasoning": "The incident ticket INC-2026-0006 for `ecommerce-prod` has been successfully created and finalized.\n\n**Incident Summary:**\nThe `payment-api` service is experiencing failures due to database connection saturation on `payment-db`, leading to API timeouts and 504 Gateway Timeout errors.\n\n**Root Cause:**\nThe `payment-db` has reached its maximum connection limit (150 active connections out of 150 max), as indicated by \"Could not connect: too many clients already\" and \"DBConnectionSaturation\" alerts. This saturation is causing `payment-api` to experience \"Slow response from database connection pool\" and \"upstream timeout during WRITES_TO operation\". Consequently, `api-gateway-prod` is reporting \"Upstream timeout\" and \"HTTP 504 Gateway Timeout\" errors when attempting to route requests to the unresponsive `payment-api`. The `payment-api` has a configured database `pool_size` of 20.\n\n**Evidence:**\n*   **App Logs (payment-api):**\n    *   `2026-02-05T12:02:15Z | WARN | payment-api | Slow response",
-      "response_preview": "The incident ticket INC-2026-0006 for `ecommerce-prod` has been successfully created and finalized.\n\n**Incident Summary:**\nThe `payment-api` service is experiencing failures due to database connection saturation on `payment-db`, leading to API timeouts and 504 Gateway Timeout errors.\n\n**Root Cause:**\nThe `payment-db` has reached its maximum connection limit (150 active connections out of 150 max), as indicated by \"Could not connect: too many clients already\" and \"DBConnectionSaturation\" alerts. This saturation is causing `payment-api` to experience \"Slow response from database connection pool\" and \"upstream timeout during WRITES_TO operation\". Consequently, `api-gateway-prod` is reporting \"Upstream timeout\" and \"HTTP 504 Gateway Timeout\" errors when attempting to route requests to the unresponsive `payment-api`. The `payment-api` has a configured database `pool_size` of 20.\n\n**Evidence:**\n*   **App Logs (payment-api):**\n    *   `2026-02-05T12:02:15Z | WARN | payment-api | Slow response"
+      "llm_reasoning": "The incident ticket for INC-2026-0006 has been successfully created and finalized.\n\n**Incident Summary:**\nPayment service experiencing timeouts due to database connection saturation, leading to 504 Gateway Timeouts.\n\n**Root Cause:**\nThe `payment-db` reached its maximum connection limit (150 active connections out of 150 max_connections), leading to connection exhaustion. This prevented the `payment-api` service (which has a connection `pool_size` of 20 to `payment-db`) from acquiring new database connections, resulting in \"Slow response from database connection pool\" warnings, \"upstream timeout during WRITES_TO operation\" errors, and \"Context deadline exceeded\" errors within the `payment-api`. Consequently, the `api-gateway-prod` experienced \"Upstream timeout\" and \"HTTP 504 Gateway Timeout\" errors when attempting to route requests to the unresponsive `payment-api`.\n\n**Evidence:**\n*   **2026-02-05T12:02:15Z (payment-api WARN):** \"Slow response from database connection pool\" - Initial si",
+      "response_preview": "The incident ticket for INC-2026-0006 has been successfully created and finalized.\n\n**Incident Summary:**\nPayment service experiencing timeouts due to database connection saturation, leading to 504 Gateway Timeouts.\n\n**Root Cause:**\nThe `payment-db` reached its maximum connection limit (150 active connections out of 150 max_connections), leading to connection exhaustion. This prevented the `payment-api` service (which has a connection `pool_size` of 20 to `payment-db`) from acquiring new database connections, resulting in \"Slow response from database connection pool\" warnings, \"upstream timeout during WRITES_TO operation\" errors, and \"Context deadline exceeded\" errors within the `payment-api`. Consequently, the `api-gateway-prod` experienced \"Upstream timeout\" and \"HTTP 504 Gateway Timeout\" errors when attempting to route requests to the unresponsive `payment-api`.\n\n**Evidence:**\n*   **2026-02-05T12:02:15Z (payment-api WARN):** \"Slow response from database connection pool\" - Initial si"
     }
   ]
 }

@@ -21,3 +21,5 @@ fastmcp
 psycopg2-binary
 uvicorn
 neo4j
+langfuse
+langfuse.langchain

@@ -1,82 +1,81 @@
 {
-  "app_id": "ecommerce-prod",
-  "incident_id": "INC-2026-0006",
+  "app_id": "admin-portal",
+  "incident_id": "INC-2026-0004",
   "app_logs": [
     {
-      "timestamp": "2026-02-05T12:00:00Z",
+      "timestamp": "2026-02-05T13:00:00Z",
       "level": "INFO",
-      "service_id": "payment-api",
-      "message": "Service started on port 8000",
-      "metadata": {}
+      "service_id": "reporting-api",
+      "message": "Order created",
+      "metadata": { "status": 201 }
     },
     {
-      "timestamp": "2026-02-05T12:02:15Z",
+      "timestamp": "2026-02-05T13:02:09Z",
       "level": "WARN",
-      "service_id": "payment-api",
-      "message": "Slow response from database connection pool",
+      "service_id": "reporting-api",
+      "message": "Write latency increased",
       "metadata": {}
     },
     {
-      "timestamp": "2026-02-05T12:03:22Z",
+      "timestamp": "2026-02-05T13:03:39Z",
       "level": "ERROR",
-      "service_id": "payment-api",
-      "message": "Payment failed: upstream timeout during WRITES_TO operation",
-      "metadata": {}
+      "service_id": "reporting-api",
+      "message": "Failed to write file",
+      "metadata": { "error": "no_space_left" }
     },
     {
-      "timestamp": "2026-02-05T12:03:40Z",
+      "timestamp": "2026-02-05T13:04:11Z",
       "level": "ERROR",
-      "service_id": "payment-api",
-      "message": "Context deadline exceeded",
-      "metadata": { "request_id": "req_502" }
+      "service_id": "reporting-api",
+      "message": "Unable to persist order due to storage failure",
+      "metadata": {}
     }
   ],
-  "database_logs": [
-    {
-      "timestamp": "2026-02-05T12:02:30Z",
-      "level": "FATAL",
-      "service_id": "payment-db",
-      "message": "Remaining connection slots are reserved for non-replication superuser connections",
-      "metadata": {}
-    },
-    {
-      "timestamp": "2026-02-05T12:03:10Z",
-      "level": "ERROR",
-      "service_id": "payment-db",
-      "message": "Could not connect: too many clients already",
-      "metadata": { "active_connections": 150, "max_connections": 150 }
-    }
-  ],
+  "database_logs": [],
   "infrastructure_logs": [
     {
-      "timestamp": "2026-02-05T12:03:30Z",
-      "level": "ERROR",
-      "service_id": "api-gateway-prod",
-      "message": "Upstream timeout",
-      "metadata": { "target": "payment-api:8000" }
+      "timestamp": "2026-02-05T13:03:29Z",
+      "level": "WARN",
+      "service_id": "k8s-internal-cluster",
+      "message": "Disk usage critical",
+      "metadata": { "node": "prod-node-2", "usage_pct": 98, "mount": "/var/lib/data" }
     },
     {
-      "timestamp": "2026-02-05T12:03:42Z",
+      "timestamp": "2026-02-05T13:03:34Z",
       "level": "ERROR",
-      "service_id": "api-gateway-prod",
-      "message": "HTTP 504 Gateway Timeout",
-      "metadata": { "path": "/process-payment" }
+      "service_id": "k8s-internal-cluster",
+      "message": "Write failure: disk full",
+      "metadata": { "node": "prod-node-2" }
+    },
+    {
+      "timestamp": "2026-02-05T13:05:59Z",
+      "level": "INFO",
+      "service_id": "k8s-internal-cluster",
+      "message": "Disk cleanup completed",
+      "metadata": { "node": "prod-node-2", "usage_pct": 65 }
     }
   ],
   "monitoring_logs": [
     {
-      "timestamp": "2026-02-05T12:02:40Z",
+      "timestamp": "2026-02-05T13:02:44Z",
       "level": "ALERT",
-      "service_id": "payment-db",
-      "message": "DBConnectionSaturation",
-      "metadata": { "usage_pct": 100 }
+      "service_id": "k8s-internal-cluster",
+      "message": "DiskUsageHigh",
+      "metadata": { "node": "prod-node-2", "usage_pct": 95 }
     },
     {
-      "timestamp": "2026-02-05T12:03:35Z",
+      "timestamp": "2026-02-05T13:03:49Z",
       "level": "ALERT",
-      "service_id": "payment-api",
-      "message": "ErrorRateSpike",
-      "metadata": { "error_rate_pct": 28 }
+      "service_id": "reporting-api",
+      "message": "WriteErrorsDetected",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-02-05T13:06:19Z",
+      "level": "ALERT",
+      "service_id": "k8s-internal-cluster",
+      "message": "DiskUsageNormal",
+      "metadata": { "node": "prod-node-2", "usage_pct": 60 }
     }
   ]
 }

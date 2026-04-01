@@ -55,20 +55,7 @@ def init_db():
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         """)
-        # 4. Agent Actions Table (Added app_id)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS agent_actions (
-                id SERIAL PRIMARY KEY,
-                app_id VARCHAR(50),
-                incident_id VARCHAR(50) REFERENCES incidents(incident_id) ON DELETE SET NULL,
-                action_type VARCHAR(50) NOT NULL,
-                input_params JSONB,
-                output_result JSONB,
-                agent_reasoning TEXT,
-                observation TEXT,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            );
-        """)
+       
         conn.commit()
         print("✅ Database initialized successfully with app_id support.")
     except Exception as e:

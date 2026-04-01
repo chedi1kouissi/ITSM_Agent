@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Long-Term Memory: Vector-Backed Graph Nodes</title>
+    <style>
+        :root {
+            --bg-color: #0b1120;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --brand-primary: #3b82f6;
+            --brand-secondary: #f43f5e;
+            --brand-tertiary: #10b981;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --glow: 0 0 25px rgba(16, 185, 129, 0.2);
+        }
+
+        body {
+            margin: 0;
+            padding: 40px;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(to bottom right, #0f172a, #020617);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin: 0 0 15px 0;
+            background: linear-gradient(to right, #10b981, #3b82f6);
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        p.subtitle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .architecture-showcase {
+            display: flex;
+            gap: 40px;
+            width: 100%;
+            max-width: 1200px;
+            align-items: stretch;
+        }
+
+        .pillar {
+            flex: 1;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pillar.traditional {
+            border-top: 5px solid var(--brand-secondary);
+        }
+
+        .pillar.innovative {
+            border-top: 5px solid var(--brand-tertiary);
+            box-shadow: var(--glow);
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            margin-top: 0;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .diagram-box {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .node {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-family: monospace;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .node.db-search {
+            background: rgba(244, 63, 94, 0.1);
+            border-color: rgba(244, 63, 94, 0.3);
+        }
+
+        .node.graph-search {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .vector-chip {
+            background: rgba(59, 130, 246, 0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #93c5fd;
+        }
+
+        .explanation {
+            line-height: 1.7;
+            color: var(--text-muted);
+        }
+
+        .explanation strong {
+            color: #fff;
+        }
+
+        .highlight-box {
+            margin-top: auto;
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--brand-primary);
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Long-Term Memory (LTM) Architecture</h1>
+        <p class="subtitle">Why we chose graph-embedded vector storage over a standalone vector database for autonomous incident resolution.</p>
+    </header>
+
+    <div class="architecture-showcase">
+        <!-- Traditional Vector DB -->
+        <div class="pillar traditional">
+            <h2>⚠️ The Standard Approach (Standalone Vector DB)</h2>
+            <div class="diagram-box">
+                <div class="node">1. LLM detects "Timeout Error"</div>
+                <div style="text-align: center; color: var(--text-muted);">↓ (Semantic Search)</div>
+                <div class="node db-search">
+                    Chroma / Pinecone
+                </div>
+                <div style="text-align: center; color: var(--text-muted);">↓ (Results retrieved)</div>
+                <div class="node">Returns 5 random tickets containing the word "Timeout" from entirely unrelated microservices.</div>
+            </div>
+            <div class="explanation">
+                <p>Most AI agents use a completely separate Vector DB for their "memory".</p>
+                <p><strong>The fatal flaw:</strong> Vector math looks for semantic similarity (text), not topological relevance. Therefore, if the <code>payment-db</code> crashes, the Vector DB might retrieve an old ticket about the <code>frontend-ui</code> timing out just because the text strings mathematical match. The agent hallucinates a fix for the wrong service.</p>
+            </div>
+        </div>
+
+        <!-- Innovative Neo4j Vector approach -->
+        <div class="pillar innovative">
+            <h2>🧠 Our Approach (Neo4j Vector Indices)</h2>
+            <div class="diagram-box">
+                <div class="node">1. Graph identifies affected node: payment-db</div>
+                <div style="text-align: center; color: var(--text-muted);">↓ (Localized Vector Search)</div>
+                <div class="node graph-search">
+                    <div>Neo4j Node: (payment-db)</div>
+                    <div style="display: flex; gap: 10px;">
+                        <span class="vector-chip">🎫 Vectorized Ticket #121</span>
+                        <span class="vector-chip">🎫 Vectorized Ticket #184</span>
+                    </div>
+                </div>
+                <div style="text-align: center; color: var(--text-muted);">↓ (100% Contextual Match)</div>
+                <div class="node">Returns specific historical fixes applied <em>only</em> to this specific database container.</div>
+            </div>
+            <div class="explanation">
+                <p>We embed the incident resolution text into a dense vector... <strong>and store it directly as a property or attached vertex on the problematic topological node.</strong></p>
+            </div>
+            <div class="highlight-box">
+                <strong>Why this dominates standard architectures:</strong>
+                <br/><br/>
+                We eliminate the "Search space hallucination". When the agent interrogates the system, it doesn't search a massive global pool of historical text. It navigates the graph to the failing node, pulls <em>only</em> the memory attached to that precise component, and applies the exact historical fix. 
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -13,7 +13,6 @@ from agentt.mcp_server.server import (
     add_evidence,
     add_recovery_steps,
     calculate_risk_score,
-    log_agent_action,
     finalize_incident,
     get_service_dependencies,
     get_blast_radius,
@@ -33,7 +32,6 @@ _initialize_incident_fn = initialize_incident.fn
 _add_evidence_fn = add_evidence.fn
 _add_recovery_steps_fn = add_recovery_steps.fn
 _calculate_risk_score_fn = calculate_risk_score.fn
-_log_agent_action_fn = log_agent_action.fn
 _finalize_incident_fn = finalize_incident.fn
 _get_service_dependencies_fn = get_service_dependencies.fn
 _get_blast_radius_fn = get_blast_radius.fn
@@ -60,26 +58,6 @@ def _add_recovery_steps(incident_id: str, steps: List[Dict[str, Any]]) -> str:
 
 def _calculate_risk_score(plan_text: str) -> int:
     return _calculate_risk_score_fn(plan_text=plan_text)
-
-def _log_agent_action(
-    incident_id: str,
-    action_type: str,
-    input_params: Dict[str, Any],
-    output_result: Dict[str, Any],
-    reasoning: str = "",
-    observation: str = "",
-    app_id: str = ""
-) -> str:
-    return _log_agent_action_fn(
-        incident_id=incident_id,
-        action_type=action_type,
-        input_params=input_params,
-        output_result=output_result,
-        reasoning=reasoning,
-        observation=observation,
-        app_id=app_id
-    )
-
 def _finalize_incident(
     incident_id: str,
     recovery_plan: str,
@@ -143,11 +121,6 @@ tools = [
         description="Calculates risk score (0-100) for a recovery plan based on dangerous keywords. Pass the full plan text."
     ),
     StructuredTool.from_function(
-        func=_log_agent_action,
-        name="log_agent_action",
-        description="Logs an agent action for audit purposes. Use for significant intermediate reasoning steps or external lookups."
-    ),
-    StructuredTool.from_function(
         func=_finalize_incident,
         name="finalize_incident",
         description="Finalizes the incident ticket, sets status to OPEN. Call this LAST after evidence and recovery steps are saved."
@@ -195,7 +168,7 @@ The `service_id` field maps directly to node IDs in Neo4j — use it to run grap
 - ALWAYS call `get_service_dependencies` after initialization.
 - Use `get_blast_radius` whenever a shared resource (DB, cache, queue) is suspected.
 - Use `get_infrastructure_routes` whenever infra/gateway errors appear in the logs.
-- Use `log_agent_action` for significant intermediate reasoning steps.
+
 """
 
 # 7. Agent Node
