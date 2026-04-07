@@ -5,6 +5,12 @@ from datetime import datetime
 import os
 import sys
 from neo4j import GraphDatabase
+from google import genai
+from google.genai import types
+from dotenv import load_dotenv
+
+load_dotenv()
+_genai_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Add parent directory to path to import agentt module
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -497,3 +503,214 @@ def calculate_risk_score(plan_text: str) -> int:
             matched_low.append(word)
 
     return min(risk_score, 100)
+
+
+
+# ============================================================================
+# LTM TOOLS
+# ============================================================================
+
+def _embed(text: str) -> List[float]:
+    result = _genai_client.models.embed_content(
+        model="gemini-embedding-001",
+        contents=text,
+        config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT")
+    )
+    return result.embeddings[0].values
+
+def _embed_query(text: str) -> List[float]:
+    result = _genai_client.models.embed_content(
+        model="gemini-embedding-001",
+        contents=text,
+        config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY")
+    )
+    return result.embeddings[0].values
+ 
+# ============================================================================
+# TOOL 1: save_resolved_ticket
+# Call this right after finalize_incident
+# ============================================================================
+ 
+@mcp.tool()
+def save_resolved_ticket(
+    incident_id: str,
+    app_id: str,
+    root_cause_node_id: str,
+    affected_service_ids: List[str],
+    problem_text: str,
+    solution_text: str,
+    risk_score: int,
+    human_notes: str = ""
+) -> str:
+    """
+    Creates a ResolvedTicket node in Neo4j, embeds problem and solution text
+    as vectors, and links the ticket to the root cause node and all affected
+    service nodes via HAS_MEMORY relationships.
+ 
+    Call this IMMEDIATELY after finalize_incident.
+ 
+    Args:
+        incident_id: The incident ID (e.g. 'INC-2026-0004')
+        app_id: The application ID (e.g. 'admin-portal')
+        root_cause_node_id: The Neo4j node ID of the root cause
+                            (e.g. 'prod-node-2', 'payment-db', 'redis-cache')
+        affected_service_ids: List of service node IDs directly affected
+                              (e.g. ['reporting-api', 'admin-service'])
+        problem_text: Root cause summary + key evidence. This is what gets
+                      embedded for future similarity search.
+        solution_text: Full recovery plan + agent notes. Combined with
+                       human_notes before embedding.
+        risk_score: Risk score from calculate_risk_score (0-100)
+        human_notes: Optional human-added notes (leave empty initially).
+                     When updated later, the solution embedding is recomputed.
+    """
+    try:
+        # Build the full solution text (human notes baked in)
+        full_solution = solution_text
+        if human_notes:
+            full_solution = f"{solution_text}\n\nHuman notes: {human_notes}"
+
+        # Embed both vectors (done BEFORE opening the transaction to avoid
+        # holding a DB connection open during slow API calls)
+        problem_embedding = _embed(problem_text)
+        solution_embedding = _embed(full_solution)
+
+        # All node IDs to link (root cause + affected services, deduplicated)
+        all_linked_nodes = list(set([root_cause_node_id] + affected_service_ids))
+
+        # Use a single explicit transaction so the node + all HAS_MEMORY edges
+        # are written atomically — either everything commits or nothing does.
+        with neo4j_driver.session() as session:
+            with session.begin_transaction() as tx:
+                # 1. Create / update the ResolvedTicket node
+                tx.run("""
+                    MERGE (t:ResolvedTicket {incident_id: $incident_id})
+                    SET t.app_id             = $app_id,
+                        t.problem_text       = $problem_text,
+                        t.solution_text      = $solution_text,
+                        t.human_notes        = $human_notes,
+                        t.risk_score         = $risk_score,
+                        t.problem_embedding  = $problem_embedding,
+                        t.solution_embedding = $solution_embedding,
+                        t.created_at         = datetime()
+                """, {
+                    "incident_id":        incident_id,
+                    "app_id":             app_id,
+                    "problem_text":       problem_text,
+                    "solution_text":      solution_text,
+                    "human_notes":        human_notes,
+                    "risk_score":         risk_score,
+                    "problem_embedding":  problem_embedding,
+                    "solution_embedding": solution_embedding,
+                })
+
+                # 2. Link to every relevant node (root cause + affected services)
+                missing_nodes = []
+                for node_id in all_linked_nodes:
+                    result = tx.run("""
+                        MATCH (n {id: $node_id})
+                        MATCH (t:ResolvedTicket {incident_id: $incident_id})
+                        MERGE (n)-[:HAS_MEMORY]->(t)
+                        RETURN count(n) AS linked
+                    """, {
+                        "node_id":     node_id,
+                        "incident_id": incident_id,
+                    })
+                    record = result.single()
+                    if not record or record["linked"] == 0:
+                        missing_nodes.append(node_id)
+
+                tx.commit()
+
+        linked_str = ", ".join(all_linked_nodes)
+        warning = ""
+        if missing_nodes:
+            warning = f" ⚠️ Warning: could not link to nodes (not found in graph): {', '.join(missing_nodes)}."
+        return (
+            f"✅ ResolvedTicket '{incident_id}' saved and linked to: {linked_str}. "
+            f"Problem and solution embeddings stored (768-dim).{warning}"
+        )
+
+    except Exception as e:
+        return f"❌ Error saving resolved ticket: {str(e)}"
+ 
+ 
+# ============================================================================
+# TOOL 2: search_memory
+# Call this after get_service_dependencies at the start of a new incident
+# ============================================================================
+ 
+@mcp.tool()
+def search_memory(
+    node_id: str,
+    current_problem: str,
+    top_k: int = 3
+) -> str:
+    """
+    Searches for similar past incidents linked to a specific graph node
+    (service, database, or infrastructure) using vector similarity on the
+    problem embedding. Returns the most relevant historical fixes.
+ 
+    Call this after get_service_dependencies when you suspect a node is
+    involved in the current incident. The search is LOCALIZED — it only
+    searches tickets linked to that specific node, not the entire database.
+ 
+    Args:
+        node_id: The Neo4j node ID to search memory for
+                 (e.g. 'reporting-api', 'payment-db', 'redis-cache')
+        current_problem: Description of the current incident's symptoms
+                         and suspected root cause. This is embedded and
+                         compared against historical problem vectors.
+        top_k: Number of similar past tickets to return (default: 3)
+    """
+    try:
+        query_embedding = _embed_query(current_problem)
+ 
+        with neo4j_driver.session() as session:
+            # Localized vector search: only within tickets linked to this node
+            result = session.run("""
+                MATCH (n {id: $node_id})-[:HAS_MEMORY]->(t:ResolvedTicket)
+                WITH t,
+                     vector.similarity.cosine(t.problem_embedding, $query_embedding) AS score
+                ORDER BY score DESC
+                LIMIT $top_k
+                RETURN t.incident_id    AS incident_id,
+                       t.app_id         AS app_id,
+                       t.problem_text   AS problem_text,
+                       t.solution_text  AS solution_text,
+                       t.human_notes    AS human_notes,
+                       t.risk_score     AS risk_score,
+                       t.created_at     AS created_at,
+                       score
+            """, {
+                "node_id":         node_id,
+                "query_embedding": query_embedding,
+                "top_k":           top_k,
+            })
+ 
+            records = list(result)
+ 
+        if not records:
+            return (
+                f"No historical incidents found for node '{node_id}'. "
+                f"This may be the first incident involving this component."
+            )
+ 
+        lines = [f"=== MEMORY SEARCH: {node_id} (top {len(records)} matches) ===\n"]
+ 
+        for i, r in enumerate(records, 1):
+            score_pct = round(r["score"] * 100, 1)
+            lines.append(f"--- Match #{i} | {r['incident_id']} | similarity: {score_pct}% ---")
+            lines.append(f"App: {r['app_id']} | Risk Score: {r['risk_score']} | Date: {r['created_at']}")
+            lines.append(f"\nPAST PROBLEM:\n{r['problem_text']}")
+            lines.append(f"\nPAST SOLUTION:\n{r['solution_text']}")
+ 
+            if r["human_notes"]:
+                lines.append(f"\n⚠️  HUMAN NOTES (apply these first):\n{r['human_notes']}")
+ 
+            lines.append("")  # spacing between matches
+ 
+        return "\n".join(lines)
+ 
+    except Exception as e:
+        return f"❌ Error searching memory: {str(e)}"

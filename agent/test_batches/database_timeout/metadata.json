@@ -1,6 +1,5 @@
 {
   "app_id": "ecommerce-prod",
-  "incident_id": "INC-2026-0002",
   "app_logs": [
     {
       "timestamp": "2026-02-05T10:00:03Z",

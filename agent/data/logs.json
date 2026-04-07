@@ -1,81 +1,66 @@
 {
-  "app_id": "admin-portal",
-  "incident_id": "INC-2026-0004",
+  "app_id": "ecommerce-prod",
   "app_logs": [
     {
-      "timestamp": "2026-02-05T13:00:00Z",
+      "timestamp": "2026-02-05T12:00:00Z",
       "level": "INFO",
-      "service_id": "reporting-api",
-      "message": "Order created",
-      "metadata": { "status": 201 }
+      "service_id": "payment-api",
+      "message": "Payment processed",
+      "metadata": { "latency_ms": 300 }
     },
     {
-      "timestamp": "2026-02-05T13:02:09Z",
+      "timestamp": "2026-02-05T12:02:15Z",
       "level": "WARN",
-      "service_id": "reporting-api",
-      "message": "Write latency increased",
+      "service_id": "payment-api",
+      "message": "External API slow response",
+      "metadata": { "latency_ms": 2500 }
+    },
+    {
+      "timestamp": "2026-02-05T12:03:22Z",
+      "level": "ERROR",
+      "service_id": "payment-api",
+      "message": "Payment failed: upstream timeout",
       "metadata": {}
     },
     {
-      "timestamp": "2026-02-05T13:03:39Z",
+      "timestamp": "2026-02-05T12:03:40Z",
       "level": "ERROR",
-      "service_id": "reporting-api",
-      "message": "Failed to write file",
-      "metadata": { "error": "no_space_left" }
-    },
-    {
-      "timestamp": "2026-02-05T13:04:11Z",
-      "level": "ERROR",
-      "service_id": "reporting-api",
-      "message": "Unable to persist order due to storage failure",
-      "metadata": {}
+      "service_id": "payment-api",
+      "message": "Retry attempt failed",
+      "metadata": { "request_id": "req_502" }
     }
   ],
   "database_logs": [],
   "infrastructure_logs": [
     {
-      "timestamp": "2026-02-05T13:03:29Z",
-      "level": "WARN",
-      "service_id": "k8s-internal-cluster",
-      "message": "Disk usage critical",
-      "metadata": { "node": "prod-node-2", "usage_pct": 98, "mount": "/var/lib/data" }
-    },
-    {
-      "timestamp": "2026-02-05T13:03:34Z",
+      "timestamp": "2026-02-05T12:03:30Z",
       "level": "ERROR",
-      "service_id": "k8s-internal-cluster",
-      "message": "Write failure: disk full",
-      "metadata": { "node": "prod-node-2" }
+      "service_id": "api-gateway-prod",
+      "message": "Upstream timeout",
+      "metadata": { "target": "payment-provider" }
     },
     {
-      "timestamp": "2026-02-05T13:05:59Z",
-      "level": "INFO",
-      "service_id": "k8s-internal-cluster",
-      "message": "Disk cleanup completed",
-      "metadata": { "node": "prod-node-2", "usage_pct": 65 }
+      "timestamp": "2026-02-05T12:03:42Z",
+      "level": "ERROR",
+      "service_id": "api-gateway-prod",
+      "message": "HTTP 502 Bad Gateway",
+      "metadata": { "target": "payment-provider" }
     }
   ],
   "monitoring_logs": [
     {
-      "timestamp": "2026-02-05T13:02:44Z",
+      "timestamp": "2026-02-05T12:02:30Z",
       "level": "ALERT",
-      "service_id": "k8s-internal-cluster",
-      "message": "DiskUsageHigh",
-      "metadata": { "node": "prod-node-2", "usage_pct": 95 }
+      "service_id": "payment-api",
+      "message": "ExternalDependencyLatency",
+      "metadata": { "service": "payment-provider", "latency_ms": 3200 }
     },
     {
-      "timestamp": "2026-02-05T13:03:49Z",
+      "timestamp": "2026-02-05T12:03:35Z",
       "level": "ALERT",
-      "service_id": "reporting-api",
-      "message": "WriteErrorsDetected",
-      "metadata": {}
-    },
-    {
-      "timestamp": "2026-02-05T13:06:19Z",
-      "level": "ALERT",
-      "service_id": "k8s-internal-cluster",
-      "message": "DiskUsageNormal",
-      "metadata": { "node": "prod-node-2", "usage_pct": 60 }
+      "service_id": "payment-api",
+      "message": "ErrorRateSpike",
+      "metadata": { "error_rate_pct": 28 }
     }
   ]
 }

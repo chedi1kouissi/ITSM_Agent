@@ -1,20 +1,20 @@
 {
   "incident_id": "INC-2026-0004",
   "app_id": "admin-portal",
-  "started_at": "2026-04-01T10:40:34.547050+00:00",
-  "finished_at": "2026-04-01T10:41:28.005111+00:00",
+  "started_at": "2026-04-02T12:37:28.235542+00:00",
+  "finished_at": "2026-04-02T12:37:59.959263+00:00",
   "status": "completed",
   "events": [
     {
       "node": "agent",
-      "timestamp": "2026-04-01T10:40:39.358463+00:00",
+      "timestamp": "2026-04-02T12:37:30.971259+00:00",
       "tool_calls": [
         {
           "name": "initialize_incident",
           "args": {
+            "incident_id": "INC-2026-0004",
             "app_id": "admin-portal",
-            "initial_summary": "Reporting API experiencing write failures due to disk full on underlying Kubernetes node.",
-            "incident_id": "INC-2026-0004"
+            "initial_summary": "Reporting API experiencing write failures due to storage issues on underlying Kubernetes cluster."
           }
         }
       ],
@@ -23,7 +23,7 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-04-01T10:40:39.432754+00:00",
+      "timestamp": "2026-04-02T12:37:31.018151+00:00",
       "tool_calls": [],
       "llm_reasoning": "\u2705 Incident INC-2026-0004 initialized.",
       "response_preview": "\u2705 Incident INC-2026-0004 initialized.",
@@ -34,7 +34,7 @@
     },
     {
       "node": "agent",
-      "timestamp": "2026-04-01T10:40:40.861640+00:00",
+      "timestamp": "2026-04-02T12:37:32.827008+00:00",
       "tool_calls": [
         {
           "name": "get_service_dependencies",
@@ -48,23 +48,24 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-04-01T10:40:40.891709+00:00",
+      "timestamp": "2026-04-02T12:37:32.865038+00:00",
       "tool_calls": [],
-      "llm_reasoning": "=== SERVICE DEPENDENCY MAP: admin-portal ===\n\n-- Direct Dependencies (Hop 1) --\n  Service:admin-service [P2] --[READS_FROM: use_case=report-queries, latency_slo_ms=500, pool_size=3]--> Database:shared-analytics-db [P1]\n  Service:reporting-api [P2] --[READS_FROM: use_case=heavy-reports, latency_slo_ms=2000, pool_size=2]--> Database:shared-analytics-db [P1]",
-      "response_preview": "=== SERVICE DEPENDENCY MAP: admin-portal ===\n\n-- Direct Dependencies (Hop 1) --\n  Service:admin-service [P2] --[READS_FROM: use_case=report-queries, latency_slo_ms=500, pool_size=3]--> Database:shared-analytics-db [P1]\n  Service:reporting-api [P2] --[READS_FROM: use_case=heavy-reports, latency_slo_ms=2000, pool_size=2]--> Database:shared-analytics-db [P1]",
+      "llm_reasoning": "=== SERVICE DEPENDENCY MAP: admin-portal ===\n\n-- Direct Dependencies (Hop 1) --\n  Service:admin-service [P2] --[READS_FROM: use_case=report-queries, latency_slo_ms=500, pool_size=3]--> Database:shared-analytics-db [P1]\n  Service:reporting-api [P2] --[READS_FROM: use_case=heavy-reports, latency_slo_ms=2000, pool_size=2]--> Database:shared-analytics-db [P1]\n  Service:reporting-api [P2] --[HAS_MEMORY]--> ResolvedTicket:None",
+      "response_preview": "=== SERVICE DEPENDENCY MAP: admin-portal ===\n\n-- Direct Dependencies (Hop 1) --\n  Service:admin-service [P2] --[READS_FROM: use_case=report-queries, latency_slo_ms=500, pool_size=3]--> Database:shared-analytics-db [P1]\n  Service:reporting-api [P2] --[READS_FROM: use_case=heavy-reports, latency_slo_ms=2000, pool_size=2]--> Database:shared-analytics-db [P1]\n  Service:reporting-api [P2] --[HAS_MEMORY]--> ResolvedTicket:None",
       "tool_result": {
         "tool_name": "get_service_dependencies",
-        "content": "=== SERVICE DEPENDENCY MAP: admin-portal ===\n\n-- Direct Dependencies (Hop 1) --\n  Service:admin-service [P2] --[READS_FROM: use_case=report-queries, latency_slo_ms=500, pool_size=3]--> Database:shared-analytics-db [P1]\n  Service:reporting-api [P2] --[READS_FROM: use_case=heavy-reports, latency_slo_ms=2000, pool_size=2]--> Database:shared-analytics-db [P1]"
+        "content": "=== SERVICE DEPENDENCY MAP: admin-portal ===\n\n-- Direct Dependencies (Hop 1) --\n  Service:admin-service [P2] --[READS_FROM: use_case=report-queries, latency_slo_ms=500, pool_size=3]--> Database:shared-analytics-db [P1]\n  Service:reporting-api [P2] --[READS_FROM: use_case=heavy-reports, latency_slo_ms=2000, pool_size=2]--> Database:shared-analytics-db [P1]\n  Service:reporting-api [P2] --[HAS_MEMORY]--> ResolvedTicket:None"
       }
     },
     {
       "node": "agent",
-      "timestamp": "2026-04-01T10:40:42.362749+00:00",
+      "timestamp": "2026-04-02T12:37:34.706990+00:00",
       "tool_calls": [
         {
-          "name": "get_blast_radius",
+          "name": "search_memory",
           "args": {
-            "resource_id": "k8s-internal-cluster"
+            "node_id": "k8s-internal-cluster",
+            "current_problem": "Disk full on a Kubernetes node leading to write failures for services."
           }
         }
       ],
@@ -73,134 +74,103 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-04-01T10:40:42.373748+00:00",
+      "timestamp": "2026-04-02T12:37:35.106247+00:00",
       "tool_calls": [],
-      "llm_reasoning": "No dependents found for resource_id='k8s-internal-cluster'.",
-      "response_preview": "No dependents found for resource_id='k8s-internal-cluster'.",
+      "llm_reasoning": "No historical incidents found for node 'k8s-internal-cluster'. This may be the first incident involving this component.",
+      "response_preview": "No historical incidents found for node 'k8s-internal-cluster'. This may be the first incident involving this component.",
       "tool_result": {
-        "tool_name": "get_blast_radius",
-        "content": "No dependents found for resource_id='k8s-internal-cluster'."
+        "tool_name": "search_memory",
+        "content": "No historical incidents found for node 'k8s-internal-cluster'. This may be the first incident involving this component."
       }
     },
     {
       "node": "agent",
-      "timestamp": "2026-04-01T10:40:46.876967+00:00",
+      "timestamp": "2026-04-02T12:37:35.837084+00:00",
+      "tool_calls": [
+        {
+          "name": "search_memory",
+          "args": {
+            "node_id": "reporting-api",
+            "current_problem": "Reporting API unable to persist data due to storage failure."
+          }
+        }
+      ],
+      "llm_reasoning": null,
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-04-02T12:37:36.183107+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "=== MEMORY SEARCH: reporting-api (top 1 matches) ===\n\n--- Match #1 | INC-2026-0004 | similarity: 88.6% ---\nApp: admin-portal | Risk Score: 20 | Date: 2026-04-02T11:46:56.125000000+00:00\n\nPAST PROBLEM:\nReporting API experienced write failures ('no_space_left', 'storage failure') due to critical disk usage and subsequent disk full error on Kubernetes node 'prod-node-2' within 'k8s-internal-cluster'. Monitoring alerts confirmed high disk usage and write errors.\n\nKey Evidence:\n- reporting-api: Write latency increased, Failed to write file (no_space_left), Unable to persist order due to storage failure.\n- k8s-internal-cluster (prod-node-2): Disk usage critical (98%), Write failure: disk full, Disk cleanup completed (65%).\n- Monitoring: DiskUsageHigh (95% on prod-node-2), WriteErrorsDetected (reporting-api), DiskUsageNormal (60% on prod-node-2).\n\nPAST SOLUTION:\n1. Acknowledge that the disk cleanup operation on prod-node-2 has resolved the immediate disk full issue, and disk usage is now at 6",
+      "response_preview": "=== MEMORY SEARCH: reporting-api (top 1 matches) ===\n\n--- Match #1 | INC-2026-0004 | similarity: 88.6% ---\nApp: admin-portal | Risk Score: 20 | Date: 2026-04-02T11:46:56.125000000+00:00\n\nPAST PROBLEM:\nReporting API experienced write failures ('no_space_left', 'storage failure') due to critical disk usage and subsequent disk full error on Kubernetes node 'prod-node-2' within 'k8s-internal-cluster'. Monitoring alerts confirmed high disk usage and write errors.\n\nKey Evidence:\n- reporting-api: Write latency increased, Failed to write file (no_space_left), Unable to persist order due to storage failure.\n- k8s-internal-cluster (prod-node-2): Disk usage critical (98%), Write failure: disk full, Disk cleanup completed (65%).\n- Monitoring: DiskUsageHigh (95% on prod-node-2), WriteErrorsDetected (reporting-api), DiskUsageNormal (60% on prod-node-2).\n\nPAST SOLUTION:\n1. Acknowledge that the disk cleanup operation on prod-node-2 has resolved the immediate disk full issue, and disk usage is now at 6",
+      "tool_result": {
+        "tool_name": "search_memory",
+        "content": "=== MEMORY SEARCH: reporting-api (top 1 matches) ===\n\n--- Match #1 | INC-2026-0004 | similarity: 88.6% ---\nApp: admin-portal | Risk Score: 20 | Date: 2026-04-02T11:46:56.125000000+00:00\n\nPAST PROBLEM:\nReporting API experienced write failures ('no_space_left', 'storage failure') due to critical disk usage and subsequent disk full error on Kubernetes node 'prod-node-2' within 'k8s-internal-cluster'. Monitoring alerts confirmed high disk usage and write errors.\n\nKey Evidence:\n- reporting-api: Write latency increased, Failed to write file (no_space_left), Unable to persist order due to storage failure.\n- k8s-internal-cluster (prod-node-2): Disk usage critical (98%), Write failure: disk full, Disk cleanup completed (65%).\n- Monitoring: DiskUsageHigh (95% on prod-node-2), WriteErrorsDetected (reporting-api), DiskUsageNormal (60% on prod-node-2).\n\nPAST SOLUTION:\n1. Acknowledge that the disk cleanup operation on prod-node-2 has resolved the immediate disk full issue, and disk usage is now at 6"
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-04-02T12:37:43.149945+00:00",
       "tool_calls": [
         {
           "name": "add_evidence",
           "args": {
+            "incident_id": "INC-2026-0004",
             "evidence_items": [
               {
-                "reasoning": "Initial warning of disk space issue on k8s-internal-cluster (prod-node-2).",
-                "timestamp": "2026-02-05T13:03:29Z",
-                "log_line": "Disk usage critical",
-                "source": "infra"
-              },
-              {
-                "source": "monitoring",
-                "reasoning": "Monitoring alert indicating high disk usage on k8s-internal-cluster (prod-node-2) before critical error.",
+                "log_line": "{\"timestamp\": \"2026-02-05T13:02:44Z\", \"level\": \"ALERT\", \"service_id\": \"k8s-internal-cluster\", \"message\": \"DiskUsageHigh\", \"metadata\": {\"node\": \"prod-node-2\", \"usage_pct\": 95}}",
+                "reasoning": "Initial alert indicating high disk usage on prod-node-2.",
                 "timestamp": "2026-02-05T13:02:44Z",
-                "log_line": "DiskUsageHigh"
+                "source": "monitoring"
               },
               {
-                "reasoning": "Reporting API started experiencing latency, potentially due to impending storage issues.",
+                "reasoning": "Reporting API starts experiencing write latency, likely due to impending disk issues.",
                 "timestamp": "2026-02-05T13:02:09Z",
-                "log_line": "Write latency increased",
-                "source": "app"
-              },
-              {
-                "source": "infra",
-                "reasoning": "Direct evidence of disk full condition on k8s-internal-cluster (prod-node-2).",
-                "timestamp": "2026-02-05T13:03:34Z",
-                "log_line": "Write failure: disk full"
-              },
-              {
-                "reasoning": "Reporting API failing to write due to 'no_space_left', directly correlating with the disk full error.",
-                "timestamp": "2026-02-05T13:03:39Z",
-                "log_line": "Failed to write file",
-                "source": "app"
-              },
-              {
-                "reasoning": "Monitoring alert for write errors in reporting-api, confirming impact.",
-                "timestamp": "2026-02-05T13:03:49Z",
-                "log_line": "WriteErrorsDetected",
-                "source": "monitoring"
-              },
-              {
                 "source": "app",
-                "reasoning": "Reporting API confirming inability to persist data due to storage failure, a direct consequence of the disk full issue.",
-                "timestamp": "2026-02-05T13:04:11Z",
-                "log_line": "Unable to persist order due to storage failure"
+                "log_line": "{\"timestamp\": \"2026-02-05T13:02:09Z\", \"level\": \"WARN\", \"service_id\": \"reporting-api\", \"message\": \"Write latency increased\", \"metadata\": {}}"
               },
               {
-                "reasoning": "Indication that a disk cleanup operation was performed on k8s-internal-cluster (prod-node-2).",
-                "timestamp": "2026-02-05T13:05:59Z",
-                "log_line": "Disk cleanup completed",
-                "source": "infra"
+                "log_line": "{\"timestamp\": \"2026-02-05T13:03:29Z\", \"level\": \"WARN\", \"service_id\": \"k8s-internal-cluster\", \"message\": \"Disk usage critical\", \"metadata\": {\"node\": \"prod-node-2\", \"usage_pct\": 98, \"mount\": \"/var/lib/data\"}}",
+                "reasoning": "Infrastructure log confirms critical disk usage on prod-node-2.",
+                "timestamp": "2026-02-05T13:03:29Z",
+                "source": "infrastructure"
               },
               {
-                "reasoning": "Monitoring alert showing disk usage returned to normal on k8s-internal-cluster (prod-node-2) after cleanup.",
-                "timestamp": "2026-02-05T13:06:19Z",
-                "log_line": "DiskUsageNormal",
+                "reasoning": "Infrastructure log confirms disk full condition and write failure on prod-node-2.",
+                "timestamp": "2026-02-05T13:03:34Z",
+                "source": "infrastructure",
+                "log_line": "{\"timestamp\": \"2026-02-05T13:03:34Z\", \"level\": \"ERROR\", \"service_id\": \"k8s-internal-cluster\", \"message\": \"Write failure: disk full\", \"metadata\": {\"node\": \"prod-node-2\"}}"
+              },
+              {
+                "log_line": "{\"timestamp\": \"2026-02-05T13:03:39Z\", \"level\": \"ERROR\", \"service_id\": \"reporting-api\", \"message\": \"Failed to write file\", \"metadata\": {\"error\": \"no_space_left\"}}",
+                "reasoning": "Reporting API fails to write due to 'no_space_left', directly caused by the disk full condition.",
+                "timestamp": "2026-02-05T13:03:39Z",
+                "source": "app"
+              },
+              {
+                "log_line": "{\"timestamp\": \"2026-02-05T13:03:49Z\", \"level\": \"ALERT\", \"service_id\": \"reporting-api\", \"message\": \"WriteErrorsDetected\", \"metadata\": {}}",
+                "reasoning": "Monitoring alert for write errors detected in reporting-api.",
+                "timestamp": "2026-02-05T13:03:49Z",
                 "source": "monitoring"
-              }
-            ],
-            "incident_id": "INC-2026-0004"
-          }
-        }
-      ],
-      "llm_reasoning": null,
-      "response_preview": null
-    },
-    {
-      "node": "tools",
-      "timestamp": "2026-04-01T10:40:46.917158+00:00",
-      "tool_calls": [],
-      "llm_reasoning": "\u2705 Added 9 evidence items to INC-2026-0004.",
-      "response_preview": "\u2705 Added 9 evidence items to INC-2026-0004.",
-      "tool_result": {
-        "tool_name": "add_evidence",
-        "content": "\u2705 Added 9 evidence items to INC-2026-0004."
-      }
-    },
-    {
-      "node": "agent",
-      "timestamp": "2026-04-01T10:40:50.666696+00:00",
-      "tool_calls": [
-        {
-          "name": "add_recovery_steps",
-          "args": {
-            "incident_id": "INC-2026-0004",
-            "steps": [
-              {
-                "step_order": 1,
-                "risk_level": "LOW",
-                "step_description": "Verify current disk utilization on prod-node-2 within k8s-internal-cluster."
               },
               {
-                "step_order": 2,
-                "step_description": "Identify and clear any stale logs, temporary files, or unnecessary data on prod-node-2 to free up disk space.",
-                "risk_level": "MEDIUM"
+                "log_line": "{\"timestamp\": \"2026-02-05T13:04:11Z\", \"level\": \"ERROR\", \"service_id\": \"reporting-api\", \"message\": \"Unable to persist order due to storage failure\", \"metadata\": {}}",
+                "reasoning": "Reporting API confirms inability to persist orders due to storage failure.",
+                "timestamp": "2026-02-05T13:04:11Z",
+                "source": "app"
               },
               {
-                "step_order": 3,
-                "step_description": "Analyze disk usage trends and identify the root cause of rapid disk consumption on k8s-internal-cluster nodes.",
-                "risk_level": "MEDIUM"
+                "log_line": "{\"timestamp\": \"2026-02-05T13:05:59Z\", \"level\": \"INFO\", \"service_id\": \"k8s-internal-cluster\", \"message\": \"Disk cleanup completed\", \"metadata\": {\"node\": \"prod-node-2\", \"usage_pct\": 65}}",
+                "reasoning": "Disk cleanup on prod-node-2, resolving the immediate issue.",
+                "timestamp": "2026-02-05T13:05:59Z",
+                "source": "infrastructure"
               },
               {
-                "step_order": 4,
-                "step_description": "Review and adjust disk usage monitoring thresholds and alerting for k8s-internal-cluster nodes to provide earlier warnings.",
-                "risk_level": "LOW"
-              },
-              {
-                "step_order": 5,
-                "step_description": "Evaluate options for increasing storage capacity or implementing dynamic storage provisioning for k8s-internal-cluster nodes.",
-                "risk_level": "LOW"
-              },
-              {
-                "step_description": "Monitor reporting-api logs for continued write errors and ensure full operational status. Resync any missed orders if necessary.",
-                "risk_level": "LOW",
-                "step_order": 6
+                "reasoning": "Monitoring confirms disk usage is back to normal after cleanup.",
+                "timestamp": "2026-02-05T13:06:19Z",
+                "source": "monitoring",
+                "log_line": "{\"timestamp\": \"2026-02-05T13:06:19Z\", \"level\": \"ALERT\", \"service_id\": \"k8s-internal-cluster\", \"message\": \"DiskUsageNormal\", \"metadata\": {\"node\": \"prod-node-2\", \"usage_pct\": 60}}"
               }
             ]
           }
@@ -211,23 +181,50 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-04-01T10:40:50.703626+00:00",
+      "timestamp": "2026-04-02T12:37:43.205299+00:00",
       "tool_calls": [],
-      "llm_reasoning": "\u2705 Added 6 recovery steps to INC-2026-0004.",
-      "response_preview": "\u2705 Added 6 recovery steps to INC-2026-0004.",
+      "llm_reasoning": "\u2705 Added 9 evidence items to INC-2026-0004.",
+      "response_preview": "\u2705 Added 9 evidence items to INC-2026-0004.",
       "tool_result": {
-        "tool_name": "add_recovery_steps",
-        "content": "\u2705 Added 6 recovery steps to INC-2026-0004."
+        "tool_name": "add_evidence",
+        "content": "\u2705 Added 9 evidence items to INC-2026-0004."
       }
     },
     {
       "node": "agent",
-      "timestamp": "2026-04-01T10:40:53.393303+00:00",
+      "timestamp": "2026-04-02T12:37:46.499047+00:00",
       "tool_calls": [
         {
-          "name": "calculate_risk_score",
+          "name": "add_recovery_steps",
           "args": {
-            "plan_text": "1. Verify current disk utilization on prod-node-2 within k8s-internal-cluster.\n2. Identify and clear any stale logs, temporary files, or unnecessary data on prod-node-2 to free up disk space.\n3. Analyze disk usage trends and identify the root cause of rapid disk consumption on k8s-internal-cluster nodes.\n4. Review and adjust disk usage monitoring thresholds and alerting for k8s-internal-cluster nodes to provide earlier warnings.\n5. Evaluate options for increasing storage capacity or implementing dynamic storage provisioning for k8s-internal-cluster nodes.\n6. Monitor reporting-api logs for continued write errors and ensure full operational status. Resync any missed orders if necessary."
+            "incident_id": "INC-2026-0004",
+            "steps": [
+              {
+                "step_description": "Verify that the reporting-api service is now fully operational and able to persist orders without errors.",
+                "step_order": 1,
+                "risk_level": "LOW"
+              },
+              {
+                "risk_level": "MEDIUM",
+                "step_description": "Investigate the root cause of disk exhaustion on prod-node-2, specifically identifying which files or directories filled up the /var/lib/data mount point.",
+                "step_order": 2
+              },
+              {
+                "step_description": "Review and adjust disk usage monitoring thresholds for Kubernetes nodes, particularly for prod-node-2, to provide earlier warnings (e.g., at 80% usage) before critical levels are reached.",
+                "step_order": 3,
+                "risk_level": "MEDIUM"
+              },
+              {
+                "risk_level": "HIGH",
+                "step_description": "Implement or enhance automated disk space management routines (e.g., log rotation, temporary file cleanup) on Kubernetes nodes to prevent recurrence of disk full incidents.",
+                "step_order": 4
+              },
+              {
+                "risk_level": "MEDIUM",
+                "step_description": "Evaluate the storage provisioning for reporting-api and its underlying infrastructure to ensure it meets current and projected needs.",
+                "step_order": 5
+              }
+            ]
           }
         }
       ],
@@ -236,7 +233,32 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-04-01T10:40:53.399328+00:00",
+      "timestamp": "2026-04-02T12:37:46.540484+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "\u2705 Added 5 recovery steps to INC-2026-0004.",
+      "response_preview": "\u2705 Added 5 recovery steps to INC-2026-0004.",
+      "tool_result": {
+        "tool_name": "add_recovery_steps",
+        "content": "\u2705 Added 5 recovery steps to INC-2026-0004."
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-04-02T12:37:47.846226+00:00",
+      "tool_calls": [
+        {
+          "name": "calculate_risk_score",
+          "args": {
+            "plan_text": "1. Verify that the reporting-api service is now fully operational and able to persist orders without errors.\n2. Investigate the root cause of disk exhaustion on prod-node-2, specifically identifying which files or directories filled up the /var/lib/data mount point.\n3. Review and adjust disk usage monitoring thresholds for Kubernetes nodes, particularly for prod-node-2, to provide earlier warnings (e.g., at 80% usage) before critical levels are reached.\n4. Implement or enhance automated disk space management routines (e.g., log rotation, temporary file cleanup) on Kubernetes nodes to prevent recurrence of disk full incidents.\n5. Evaluate the storage provisioning for reporting-api and its underlying infrastructure to ensure it meets current and projected needs."
+          }
+        }
+      ],
+      "llm_reasoning": null,
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-04-02T12:37:47.849756+00:00",
       "tool_calls": [],
       "llm_reasoning": "20",
       "response_preview": "20",
@@ -247,16 +269,16 @@
     },
     {
       "node": "agent",
-      "timestamp": "2026-04-01T10:41:12.661781+00:00",
+      "timestamp": "2026-04-02T12:37:50.368313+00:00",
       "tool_calls": [
         {
           "name": "finalize_incident",
           "args": {
+            "incident_id": "INC-2026-0004",
+            "agent_notes": "The incident was caused by a disk full condition on Kubernetes node prod-node-2, which hosts the reporting-api service. This led to reporting-api being unable to write files and persist orders. A manual or automated disk cleanup on prod-node-2 resolved the immediate issue, bringing disk usage back to normal. The recovery plan focuses on proactive measures to prevent recurrence, including deeper investigation, improved monitoring, and automated disk management.",
             "risk_score": 20,
-            "recovery_plan": "1. Verify current disk utilization on prod-node-2 within k8s-internal-cluster.\n2. Identify and clear any stale logs, temporary files, or unnecessary data on prod-node-2 to free up disk space.\n3. Analyze disk usage trends and identify the root cause of rapid disk consumption on k8s-internal-cluster nodes.\n4. Review and adjust disk usage monitoring thresholds and alerting for k8s-internal-cluster nodes to provide earlier warnings.\n5. Evaluate options for increasing storage capacity or implementing dynamic storage provisioning for k8s-internal-cluster nodes.\n6. Monitor reporting-api logs for continued write errors and ensure full operational status. Resync any missed orders if necessary.",
-            "agent_notes": "The reporting-api experienced write failures due to a disk full condition on prod-node-2 within the k8s-internal-cluster. Logs indicate a disk cleanup was performed, restoring normal operation. The recovery plan focuses on verifying the fix, identifying the root cause of disk consumption, and implementing preventative measures like improved monitoring and storage scaling.",
             "app_id": "admin-portal",
-            "incident_id": "INC-2026-0004"
+            "recovery_plan": "1. Verify that the reporting-api service is now fully operational and able to persist orders without errors.\n2. Investigate the root cause of disk exhaustion on prod-node-2, specifically identifying which files or directories filled up the /var/lib/data mount point.\n3. Review and adjust disk usage monitoring thresholds for Kubernetes nodes, particularly for prod-node-2, to provide earlier warnings (e.g., at 80% usage) before critical levels are reached.\n4. Implement or enhance automated disk space management routines (e.g., log rotation, temporary file cleanup) on Kubernetes nodes to prevent recurrence of disk full incidents.\n5. Evaluate the storage provisioning for reporting-api and its underlying infrastructure to ensure it meets current and projected needs."
           }
         }
       ],
@@ -265,7 +287,7 @@
     },
     {
       "node": "tools",
-      "timestamp": "2026-04-01T10:41:12.697705+00:00",
+      "timestamp": "2026-04-02T12:37:50.410558+00:00",
       "tool_calls": [],
       "llm_reasoning": "\u2705 Incident INC-2026-0004 finalized with risk score 20.",
       "response_preview": "\u2705 Incident INC-2026-0004 finalized with risk score 20.",
@@ -276,10 +298,44 @@
     },
     {
       "node": "agent",
-      "timestamp": "2026-04-01T10:41:28.003588+00:00",
+      "timestamp": "2026-04-02T12:37:54.291633+00:00",
+      "tool_calls": [
+        {
+          "name": "save_resolved_ticket",
+          "args": {
+            "problem_text": "Reporting API experienced write failures ('no_space_left', 'storage failure') due to critical disk usage and subsequent disk full error on Kubernetes node 'prod-node-2' within 'k8s-internal-cluster'. Monitoring alerts confirmed high disk usage and write errors.\n\nKey Evidence:\n- reporting-api: Write latency increased, Failed to write file (no_space_left), Unable to persist order due to storage failure.\n- k8s-internal-cluster (prod-node-2): Disk usage critical (98%), Write failure: disk full, Disk cleanup completed (65%).\n- Monitoring: DiskUsageHigh (95% on prod-node-2), WriteErrorsDetected (reporting-api), DiskUsageNormal (60% on prod-node-2).",
+            "human_notes": "The incident was caused by a disk full condition on Kubernetes node prod-node-2, which hosts the reporting-api service. This led to reporting-api being unable to write files and persist orders. A manual or automated disk cleanup on prod-node-2 resolved the immediate issue, bringing disk usage back to normal. The recovery plan focuses on proactive measures to prevent recurrence, including deeper investigation, improved monitoring, and automated disk management.",
+            "affected_service_ids": [
+              "reporting-api"
+            ],
+            "incident_id": "INC-2026-0004",
+            "app_id": "admin-portal",
+            "solution_text": "1. Verify that the reporting-api service is now fully operational and able to persist orders without errors.\n2. Investigate the root cause of disk exhaustion on prod-node-2, specifically identifying which files or directories filled up the /var/lib/data mount point.\n3. Review and adjust disk usage monitoring thresholds for Kubernetes nodes, particularly for prod-node-2, to provide earlier warnings (e.g., at 80% usage) before critical levels are reached.\n4. Implement or enhance automated disk space management routines (e.g., log rotation, temporary file cleanup) on Kubernetes nodes to prevent recurrence of disk full incidents.\n5. Evaluate the storage provisioning for reporting-api and its underlying infrastructure to ensure it meets current and projected needs.\n\nAgent Notes: The incident was caused by a disk full condition on Kubernetes node prod-node-2, which hosts the reporting-api service. This led to reporting-api being unable to write files and persist orders. A manual or automated disk cleanup on prod-node-2 resolved the immediate issue, bringing disk usage back to normal. The recovery plan focuses on proactive measures to prevent recurrence, including deeper investigation, improved monitoring, and automated disk management.",
+            "risk_score": 20,
+            "root_cause_node_id": "k8s-internal-cluster"
+          }
+        }
+      ],
+      "llm_reasoning": null,
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-04-02T12:37:55.341545+00:00",
       "tool_calls": [],
-      "llm_reasoning": "The incident ticket INC-2026-0004 for `admin-portal` has been successfully created and finalized.\n\n**Root Cause:**\nThe `reporting-api` service experienced write failures due to a disk full condition on `prod-node-2` within the `k8s-internal-cluster`. This was evidenced by `k8s-internal-cluster` logs showing \"Disk usage critical\" and \"Write failure: disk full\", followed by `reporting-api` logs indicating \"Failed to write file\" with \"no_space_left\" and \"Unable to persist order due to storage failure\". Monitoring alerts also confirmed high disk usage and write errors. A disk cleanup was performed on `prod-node-2`, which resolved the immediate issue, bringing disk usage back to normal.\n\n**Recovery Plan (Risk Score: 20):**\n1.  **Verify Disk Space**: Confirm current disk utilization on `prod-node-2` within `k8s-internal-cluster`. (Risk: LOW)\n2.  **Identify and Clear Stale Data**: Investigate and clear any stale logs, temporary files, or unnecessary data on `prod-node-2` to prevent recurrence",
-      "response_preview": "The incident ticket INC-2026-0004 for `admin-portal` has been successfully created and finalized.\n\n**Root Cause:**\nThe `reporting-api` service experienced write failures due to a disk full condition on `prod-node-2` within the `k8s-internal-cluster`. This was evidenced by `k8s-internal-cluster` logs showing \"Disk usage critical\" and \"Write failure: disk full\", followed by `reporting-api` logs indicating \"Failed to write file\" with \"no_space_left\" and \"Unable to persist order due to storage failure\". Monitoring alerts also confirmed high disk usage and write errors. A disk cleanup was performed on `prod-node-2`, which resolved the immediate issue, bringing disk usage back to normal.\n\n**Recovery Plan (Risk Score: 20):**\n1.  **Verify Disk Space**: Confirm current disk utilization on `prod-node-2` within `k8s-internal-cluster`. (Risk: LOW)\n2.  **Identify and Clear Stale Data**: Investigate and clear any stale logs, temporary files, or unnecessary data on `prod-node-2` to prevent recurrence"
+      "llm_reasoning": "\u2705 ResolvedTicket 'INC-2026-0004' saved and linked to: k8s-internal-cluster, reporting-api. Problem and solution embeddings stored (768-dim).",
+      "response_preview": "\u2705 ResolvedTicket 'INC-2026-0004' saved and linked to: k8s-internal-cluster, reporting-api. Problem and solution embeddings stored (768-dim).",
+      "tool_result": {
+        "tool_name": "save_resolved_ticket",
+        "content": "\u2705 ResolvedTicket 'INC-2026-0004' saved and linked to: k8s-internal-cluster, reporting-api. Problem and solution embeddings stored (768-dim)."
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-04-02T12:37:59.952236+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "The incident INC-2026-0004 for `admin-portal` has been fully analyzed and a ticket created.\n\n**Root Cause:**\nThe root cause of the incident was a disk full condition on Kubernetes node `prod-node-2` within the `k8s-internal-cluster`. This led to the `reporting-api` service, which is hosted on this node, being unable to write files and persist orders due to a \"no_space_left\" error.\n\n**Evidence:**\n*   **2026-02-05T13:02:44Z (ALERT - k8s-internal-cluster):** DiskUsageHigh (node: prod-node-2, usage_pct: 95) - *Initial alert indicating high disk usage.*\n*   **2026-02-05T13:02:09Z (WARN - reporting-api):** Write latency increased - *Reporting API starts experiencing write latency.*\n*   **2026-02-05T13:03:29Z (WARN - k8s-internal-cluster):** Disk usage critical (node: prod-node-2, usage_pct: 98, mount: /var/lib/data) - *Infrastructure log confirms critical disk usage.*\n*   **2026-02-05T13:03:34Z (ERROR - k8s-internal-cluster):** Write failure: disk full (node: prod-node-2) - *Infrastructure l",
+      "response_preview": "The incident INC-2026-0004 for `admin-portal` has been fully analyzed and a ticket created.\n\n**Root Cause:**\nThe root cause of the incident was a disk full condition on Kubernetes node `prod-node-2` within the `k8s-internal-cluster`. This led to the `reporting-api` service, which is hosted on this node, being unable to write files and persist orders due to a \"no_space_left\" error.\n\n**Evidence:**\n*   **2026-02-05T13:02:44Z (ALERT - k8s-internal-cluster):** DiskUsageHigh (node: prod-node-2, usage_pct: 95) - *Initial alert indicating high disk usage.*\n*   **2026-02-05T13:02:09Z (WARN - reporting-api):** Write latency increased - *Reporting API starts experiencing write latency.*\n*   **2026-02-05T13:03:29Z (WARN - k8s-internal-cluster):** Disk usage critical (node: prod-node-2, usage_pct: 98, mount: /var/lib/data) - *Infrastructure log confirms critical disk usage.*\n*   **2026-02-05T13:03:34Z (ERROR - k8s-internal-cluster):** Write failure: disk full (node: prod-node-2) - *Infrastructure l"
     }
   ]
 }

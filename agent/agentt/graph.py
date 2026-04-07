@@ -1,3 +1,4 @@
+#graph.py
 import os
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -6,6 +7,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_core.messages import SystemMessage
 from langchain_core.tools import StructuredTool
 from typing import List, Dict, Any
+from agentt.prompt import SYSTEM_PROMPT
 
 from agentt.state import AgentState
 from agentt.mcp_server.server import (
@@ -17,6 +19,8 @@ from agentt.mcp_server.server import (
     get_service_dependencies,
     get_blast_radius,
     get_infrastructure_routes,
+    save_resolved_ticket,
+    search_memory
 )
 
 load_dotenv()
@@ -36,6 +40,8 @@ _finalize_incident_fn = finalize_incident.fn
 _get_service_dependencies_fn = get_service_dependencies.fn
 _get_blast_radius_fn = get_blast_radius.fn
 _get_infrastructure_routes_fn = get_infrastructure_routes.fn
+_save_resolved_ticket_fn = save_resolved_ticket.fn
+_search_memory_fn = search_memory.fn
 
 # 3. Plain Python wrappers (callable by LangChain)
 def _initialize_incident(incident_id: str, app_id: str = "", initial_summary: str = "") -> str:
@@ -71,6 +77,38 @@ def _finalize_incident(
         risk_score=risk_score,
         agent_notes=agent_notes,
         app_id=app_id
+    )
+
+def _save_resolved_ticket(
+    incident_id: str,
+    app_id: str,
+    root_cause_node_id: str,
+    affected_service_ids: List[str],
+    problem_text: str,
+    solution_text: str,
+    risk_score: int,
+    human_notes: str = ""
+) -> str:
+    return _save_resolved_ticket_fn(
+        incident_id=incident_id,
+        app_id=app_id,
+        root_cause_node_id=root_cause_node_id,
+        affected_service_ids=affected_service_ids,
+        problem_text=problem_text,
+        solution_text=solution_text,
+        risk_score=risk_score,
+        human_notes=human_notes,
+    )
+ 
+def _search_memory(
+    node_id: str,
+    current_problem: str,
+    top_k: int = 3
+) -> str:
+    return _search_memory_fn(
+        node_id=node_id,
+        current_problem=current_problem,
+        top_k=top_k,
     )
 
 # 4. Wrap as LangChain StructuredTools
@@ -125,51 +163,30 @@ tools = [
         name="finalize_incident",
         description="Finalizes the incident ticket, sets status to OPEN. Call this LAST after evidence and recovery steps are saved."
     ),
+     StructuredTool.from_function(
+        func=_search_memory,
+        name="search_memory",
+        description=(
+            "Searches past resolved incidents linked to a specific graph node "
+            "(service, database, or infrastructure) using vector similarity. "
+            "Call this after get_service_dependencies for any node you suspect "
+            "is involved. Returns top-k most similar historical problems and their "
+            "solutions. ALWAYS check human_notes in results — apply those first."
+        )
+    ),
+    StructuredTool.from_function(
+        func=_save_resolved_ticket,
+        name="save_resolved_ticket",
+        description=(
+            "Creates a ResolvedTicket node in Neo4j, embeds the problem and solution "
+            "as vectors, and links it to the root cause node and all affected service "
+            "nodes. Call this IMMEDIATELY after finalize_incident."
+        )
+    )
 ]
 
 # 5. Bind tools to LLM
 llm_with_tools = llm.bind_tools(tools)
-
-# 6. System Prompt
-SYSTEM_PROMPT = """You are an expert SRE Agent. Your job is to analyze logs, cross-reference them with system topology, find the root cause, and create a ticket.
-
-### WORKFLOW (MUST FOLLOW IN ORDER):
-
-1. **Initialize Incident**:
-   - Call `initialize_incident(incident_id, app_id, initial_summary)` FIRST.
-
-2. **Understand the Architecture** (use all 3 graph tools, in this order):
-   a. `get_service_dependencies(app_id)` — maps the full 2-hop dependency chain. Identifies which databases, caches, and queues each service relies on, plus edge properties like pool_size and latency SLOs.
-   b. `get_blast_radius(resource_id)` — call this for any resource that looks like a root cause (e.g. a saturated DB or a failing cache). Returns all services across ALL apps affected by it.
-   c. `get_infrastructure_routes(app_id)` — call this if the logs show 502/504 errors or gateway timeouts. Maps which gateways sit in front of each service.
-
-3. **Save Evidence**:
-   - Call `add_evidence(incident_id, evidence_items)` with all relevant log lines.
-   - The log entries include a `service_id` field that maps directly to node IDs in the graph — use this to cite graph context in your reasoning field.
-   - Include ALL log lines that form the causal chain.
-
-4. **Analyze & Create Recovery Plan**:
-   - Use the topology to make the plan precise (e.g. reference the specific pool_size, max_conn, or timeout_ms from the graph).
-   - Call `add_recovery_steps(incident_id, steps)` with ordered, actionable steps.
-
-5. **Calculate Risk Score**:
-   - Call `calculate_risk_score(plan_text)` on the full plan text.
-
-6. **Finalize Ticket**:
-   - Call `finalize_incident(incident_id, recovery_plan, risk_score, agent_notes, app_id)` LAST.
-   - Use the SAME incident_id and app_id throughout.
-
-### LOG FORMAT:
-Logs are structured JSON arrays with fields: timestamp, level, service_id, message, metadata.
-The `service_id` field maps directly to node IDs in Neo4j — use it to run graph lookups.
-
-### IMPORTANT:
-- ALWAYS call `initialize_incident` first.
-- ALWAYS call `get_service_dependencies` after initialization.
-- Use `get_blast_radius` whenever a shared resource (DB, cache, queue) is suspected.
-- Use `get_infrastructure_routes` whenever infra/gateway errors appear in the logs.
-
-"""
 
 # 7. Agent Node
 def agent_node(state: AgentState):
