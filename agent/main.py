@@ -1,3 +1,4 @@
+#main.py
 import json
 import uuid
 import os
@@ -21,7 +22,7 @@ def generate_incident_id():
 
 
 def extract_reasoning(msg) -> str | None:
-    """
+    """ 
     Gemini returns reasoning text in different places depending on whether
     it also emits tool calls in the same response. Check all of them.
     """

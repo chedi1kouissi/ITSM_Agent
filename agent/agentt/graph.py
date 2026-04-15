@@ -20,7 +20,8 @@ from agentt.mcp_server.server import (
     get_blast_radius,
     get_infrastructure_routes,
     save_resolved_ticket,
-    search_memory
+    search_memory,
+    create_linear_ticket,
 )
 
 load_dotenv()
@@ -42,6 +43,7 @@ _get_blast_radius_fn = get_blast_radius.fn
 _get_infrastructure_routes_fn = get_infrastructure_routes.fn
 _save_resolved_ticket_fn = save_resolved_ticket.fn
 _search_memory_fn = search_memory.fn
+_create_linear_ticket_fn = create_linear_ticket.fn
 
 # 3. Plain Python wrappers (callable by LangChain)
 def _initialize_incident(incident_id: str, app_id: str = "", initial_summary: str = "") -> str:
@@ -87,6 +89,7 @@ def _save_resolved_ticket(
     problem_text: str,
     solution_text: str,
     risk_score: int,
+    linear_issue_id: str = "",
     human_notes: str = ""
 ) -> str:
     return _save_resolved_ticket_fn(
@@ -97,9 +100,10 @@ def _save_resolved_ticket(
         problem_text=problem_text,
         solution_text=solution_text,
         risk_score=risk_score,
+        linear_issue_id=linear_issue_id,
         human_notes=human_notes,
     )
- 
+
 def _search_memory(
     node_id: str,
     current_problem: str,
@@ -109,6 +113,19 @@ def _search_memory(
         node_id=node_id,
         current_problem=current_problem,
         top_k=top_k,
+    )
+
+def _create_linear_ticket(
+    incident_id: str,
+    title: str,
+    description: str,
+    risk_score: int,
+) -> str:
+    return _create_linear_ticket_fn(
+        incident_id=incident_id,
+        title=title,
+        description=description,
+        risk_score=risk_score,
     )
 
 # 4. Wrap as LangChain StructuredTools
@@ -163,7 +180,7 @@ tools = [
         name="finalize_incident",
         description="Finalizes the incident ticket, sets status to OPEN. Call this LAST after evidence and recovery steps are saved."
     ),
-     StructuredTool.from_function(
+    StructuredTool.from_function(
         func=_search_memory,
         name="search_memory",
         description=(
@@ -175,14 +192,27 @@ tools = [
         )
     ),
     StructuredTool.from_function(
+        func=_create_linear_ticket,
+        name="create_linear_ticket",
+        description=(
+            "Creates a Linear issue for the current incident. Call this IMMEDIATELY "
+            "after finalize_incident. Returns the linear_issue_id (UUID) which MUST "
+            "be passed to save_resolved_ticket. Builds a formatted Markdown description "
+            "from: title (INCIDENT_ID: root cause summary), description (## Root Cause, "
+            "## Evidence Summary, ## Recovery Plan, ## Risk Score, ## Affected Services), "
+            "and risk_score to determine Linear priority."
+        )
+    ),
+    StructuredTool.from_function(
         func=_save_resolved_ticket,
         name="save_resolved_ticket",
         description=(
             "Creates a ResolvedTicket node in Neo4j, embeds the problem and solution "
             "as vectors, and links it to the root cause node and all affected service "
-            "nodes. Call this IMMEDIATELY after finalize_incident."
+            "nodes. Call this after create_linear_ticket. Pass the linear_issue_id "
+            "returned by create_linear_ticket so the webhook server can find this node."
         )
-    )
+    ),
 ]
 
 # 5. Bind tools to LLM

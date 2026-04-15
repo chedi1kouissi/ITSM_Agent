@@ -1,0 +1,339 @@
+{
+  "incident_id": "INC-2026-DBEF9B37",
+  "app_id": "ecommerce-prod",
+  "started_at": "2026-04-15T14:26:37.573575+00:00",
+  "finished_at": "2026-04-15T14:27:08.016272+00:00",
+  "status": "completed",
+  "events": [
+    {
+      "node": "agent",
+      "timestamp": "2026-04-15T14:26:42.561593+00:00",
+      "tool_calls": [
+        {
+          "name": "initialize_incident",
+          "args": {
+            "app_id": "ecommerce-prod",
+            "incident_id": "INC-2026-DBEF9B37",
+            "initial_summary": "catalog-api service experienced an OutOfMemoryError and was OOMKilled by Kubernetes, leading to a restart. This was preceded by warnings about increasing cache size and high memory usage."
+          }
+        }
+      ],
+      "llm_reasoning": "I am going to initialize the incident, then gather information about the `ecommerce-prod` application's service dependencies to understand its architecture. After that, I will search the long-term memory for any past incidents related to the `catalog-api` service and the `k8s-prod-cluster` infrastructure, as these appear to be directly involved in the current problem.",
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-04-15T14:26:42.601227+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "\u2705 Incident INC-2026-DBEF9B37 initialized.",
+      "response_preview": null,
+      "tool_result": {
+        "tool_name": "initialize_incident",
+        "content": "\u2705 Incident INC-2026-DBEF9B37 initialized."
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-04-15T14:26:43.741366+00:00",
+      "tool_calls": [
+        {
+          "name": "get_service_dependencies",
+          "args": {
+            "app_id": "ecommerce-prod"
+          }
+        }
+      ],
+      "llm_reasoning": "I am initializing the incident and gathering service dependencies to understand the architecture of the `ecommerce-prod` application. This will help me identify potential upstream or downstream impacts of the `catalog-api` service failure.",
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-04-15T14:26:43.774621+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "=== SERVICE DEPENDENCY MAP: ecommerce-prod ===\n\n-- Direct Dependencies (Hop 1) --\n  Service:catalog-api [P1] --[WRITES_TO: latency_slo_ms=50, pool_size=30]--> Database:catalog-db [P1]\n  Service:catalog-api [P1] --[READS_FROM: latency_slo_ms=30, pool_size=30]--> Database:catalog-db [P1]\n  Service:catalog-api [P1] --[READS_FROM: use_case=product-cache, ttl_seconds=300]--> Infrastructure:redis-cache [P1]\n  Service:catalog-api [P1] --[HAS_MEMORY]--> ResolvedTicket:None\n  Service:catalog-api [P1] --[HAS_MEMORY]--> ResolvedTicket:None\n  Service:payment-api [P0] --[WRITES_TO: latency_slo_ms=50, pool_size=20, orm=SQLAlchemy]--> Database:payment-db [P0]\n  Service:payment-api [P0] --[WRITES_TO: use_case=transaction-events, latency_slo_ms=200, pool_size=5]--> Database:shared-analytics-db [P1]\n  Service:payment-api [P0] --[WRITES_TO: use_case=payment-events, routing_key=payment.completed]--> Infrastructure:rabbitmq-prod [P1]\n  Service:payment-api [P0] --[READS_FROM: latency_slo_ms=50, pool_size=20]--> Database:payment-db [P0]\n  Service:payment-api [P0] --[READS_FROM: use_case=idempotency-keys, latency_slo_ms=5]--> Infrastructure:redis-cache [P1]\n  Service:payment-api [P0] --[HAS_MEMORY]--> ResolvedTicket:None\n  Service:payment-api [P0] --[HAS_MEMORY]--> ResolvedTicket:None\n  Service:payment-api [P0] --[HAS_MEMORY]--> ResolvedTicket:None\n  Service:web-frontend [P1] --[CALLS: protocol=HTTP/REST, latency_slo_ms=300, timeout_ms=5000]--> Service:payment-api [P0]\n  Service:web-frontend [P1] --[CALLS: protocol=HTTP/REST, latency_slo_ms=200, timeout_ms=3000]--> Service:catalog-api [P1]\n\n-- Transitive Dependencies (Hop 2) --\n  Service:catalog-api --[WRITES_TO: latency_slo_ms=50, pool_size=30]--> Database:catalog-db\n  Service:catalog-api --[READS_FROM: latency_slo_ms=30, pool_size=30]--> Database:catalog-db\n  Service:catalog-api --[READS_FROM: use_case=product-cache, ttl_seconds=300]--> Infrastructure:redis-cache\n  Service:catalog-api --[HAS_MEMORY]--> ResolvedTicket:None\n  Service:catal",
+      "response_preview": null,
+      "tool_result": {
+        "tool_name": "get_service_dependencies",
+        "content": "=== SERVICE DEPENDENCY MAP: ecommerce-prod ===\n\n-- Direct Dependencies (Hop 1) --\n  Service:catalog-api [P1] --[WRITES_TO: latency_slo_ms=50, pool_size=30]--> Database:catalog-db [P1]\n  Service:catalog-api [P1] --[READS_FROM: latency_slo_ms=30, pool_size=30]--> Database:catalog-db [P1]\n  Service:catalog-api [P1] --[READS_FROM: use_case=product-cache, ttl_seconds=300]--> Infrastructure:redis-cache [P1]\n  Service:catalog-api [P1] --[HAS_MEMORY]--> ResolvedTicket:None\n  Service:catalog-api [P1] --[HAS_MEMORY]--> ResolvedTicket:None\n  Service:payment-api [P0] --[WRITES_TO: latency_slo_ms=50, pool_size=20, orm=SQLAlchemy]--> Database:payment-db [P0]\n  Service:payment-api [P0] --[WRITES_TO: use_case=transaction-events, latency_slo_ms=200, pool_size=5]--> Database:shared-analytics-db [P1]\n  Service:payment-api [P0] --[WRITES_TO: use_case=payment-events, routing_key=payment.completed]--> Infrastructure:rabbitmq-prod [P1]\n  Service:payment-api [P0] --[READS_FROM: latency_slo_ms=50, pool_size=20"
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-04-15T14:26:45.167188+00:00",
+      "tool_calls": [
+        {
+          "name": "search_memory",
+          "args": {
+            "current_problem": "catalog-api service experienced an OutOfMemoryError and was OOMKilled by Kubernetes, leading to a restart. This was preceded by warnings about increasing cache size and high memory usage.",
+            "node_id": "catalog-api"
+          }
+        }
+      ],
+      "llm_reasoning": "I will now search for historical incidents related to the `catalog-api` service, as the logs indicate it's the primary service affected by the OutOfMemoryError. This will help determine if similar issues have occurred before and if there are any known solutions.",
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-04-15T14:26:45.573676+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "=== MEMORY SEARCH: catalog-api (top 2 matches) ===\n\n--- Match #1 | INC-2026-12869B76 | similarity: 95.6% ---\nApp: ecommerce-prod | Risk Score: 20 | Date: 2026-04-15T14:22:48.831000000+00:00\n\nPAST PROBLEM:\nThe catalog-api service experienced an OutOfMemoryError and was subsequently OOMKilled by the Kubernetes cluster due to unexpected cache size growth, leading to a service restart. Evidence includes warnings about increasing cache size and high memory usage from the application and critical memory usage alerts from Kubernetes, culminating in the OOMKilled event.\n\nPAST SOLUTION:\n1. Investigate the catalog-api service for potential memory leaks or inefficient cache management, focusing on the unexpected cache size growth.\n2. Review recent code changes in catalog-api that might have introduced the cache size growth.\n3. Consider increasing the memory limits for the catalog-api container in the Kubernetes deployment as a temporary mitigation, if investigation reveals it's not a leak but expected growth.\n4. Implement more aggressive cache eviction policies or introduce a maximum cache size limit in catalog-api.\n5. Add more detailed memory profiling and monitoring for catalog-api to proactively detect similar issues.\n\n--- Match #2 | INC-2026-C3A8DF28 | similarity: 94.7% ---\nApp: ecommerce-prod | Risk Score: 50 | Date: 2026-04-15T14:12:17.285000000+00:00\n\nPAST PROBLEM:\nThe catalog-api service experienced an OutOfMemoryError due to unexpected cache growth, leading to OOMKilled container restarts by Kubernetes. This was evidenced by application logs showing \"Cache size growing unexpectedly\" and \"OutOfMemoryError: allocation failed\", corroborated by infrastructure logs indicating \"Container memory usage critical\" and \"Container terminated OOMKilled\".\n\nPAST SOLUTION:\n1. Temporarily increase memory limits for the 'catalog-api' container in Kubernetes to provide more headroom and reduce the frequency of OOMKills. This is a temporary measure to stabilize the service.\n2. If a recen",
+      "response_preview": null,
+      "tool_result": {
+        "tool_name": "search_memory",
+        "content": "=== MEMORY SEARCH: catalog-api (top 2 matches) ===\n\n--- Match #1 | INC-2026-12869B76 | similarity: 95.6% ---\nApp: ecommerce-prod | Risk Score: 20 | Date: 2026-04-15T14:22:48.831000000+00:00\n\nPAST PROBLEM:\nThe catalog-api service experienced an OutOfMemoryError and was subsequently OOMKilled by the Kubernetes cluster due to unexpected cache size growth, leading to a service restart. Evidence includes warnings about increasing cache size and high memory usage from the application and critical memory usage alerts from Kubernetes, culminating in the OOMKilled event.\n\nPAST SOLUTION:\n1. Investigate the catalog-api service for potential memory leaks or inefficient cache management, focusing on the unexpected cache size growth.\n2. Review recent code changes in catalog-api that might have introduced the cache size growth.\n3. Consider increasing the memory limits for the catalog-api container in the Kubernetes deployment as a temporary mitigation, if investigation reveals it's not a leak but exp"
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-04-15T14:26:52.277279+00:00",
+      "tool_calls": [
+        {
+          "name": "add_evidence",
+          "args": {
+            "incident_id": "INC-2026-DBEF9B37",
+            "evidence_items": [
+              {
+                "timestamp": "2026-02-05T11:02:10Z",
+                "source": "app",
+                "log_line": "{'timestamp': '2026-02-05T11:02:10Z', 'level': 'WARN', 'service_id': 'catalog-api', 'message': 'Cache size growing unexpectedly', 'metadata': {'size_mb': 850}}",
+                "reasoning": "Initial warning indicating abnormal cache growth within the catalog-api service."
+              },
+              {
+                "log_line": "{'timestamp': '2026-02-05T11:02:58Z', 'level': 'ALERT', 'service_id': 'catalog-api', 'message': 'HighMemory', 'metadata': {'usage_pct': 92}}",
+                "reasoning": "Monitoring alert confirming high memory usage in catalog-api, correlating with cache growth.",
+                "timestamp": "2026-02-05T11:02:58Z",
+                "source": "monitoring"
+              },
+              {
+                "timestamp": "2026-02-05T11:03:18Z",
+                "source": "app",
+                "log_line": "{'timestamp': '2026-02-05T11:03:18Z', 'level': 'WARN', 'service_id': 'catalog-api', 'message': 'High memory usage detected', 'metadata': {'usage_mb': 1500}}",
+                "reasoning": "Application-level warning indicating critical memory usage."
+              },
+              {
+                "timestamp": "2026-02-05T11:04:38Z",
+                "source": "infra",
+                "log_line": "{'timestamp': '2026-02-05T11:04:38Z', 'level': 'WARN', 'service_id': 'k8s-prod-cluster', 'message': 'Container memory usage critical', 'metadata': {'container': 'catalog-api', 'usage_pct': 96}}",
+                "reasoning": "Infrastructure-level warning from Kubernetes about critical memory usage of the catalog-api container."
+              },
+              {
+                "log_line": "{'timestamp': '2026-02-05T11:04:43Z', 'level': 'ERROR', 'service_id': 'catalog-api', 'message': 'OutOfMemoryError: allocation failed', 'metadata': {}}",
+                "reasoning": "Direct evidence of the OutOfMemoryError in the catalog-api application.",
+                "timestamp": "2026-02-05T11:04:43Z",
+                "source": "app"
+              },
+              {
+                "source": "infra",
+                "timestamp": "2026-02-05T11:04:42Z",
+                "log_line": "{'timestamp': '2026-02-05T11:04:42Z', 'level': 'ERROR', 'service_id': 'k8s-prod-cluster', 'message': 'Container terminated OOMKilled', 'metadata': {'container': 'catalog-api', 'reason': 'OOMKilled'}}",
+                "reasoning": "Kubernetes terminating the catalog-api container due to OutOfMemory, confirming the OOMKilled event."
+              },
+              {
+                "source": "infra",
+                "timestamp": "2026-02-05T11:04:58Z",
+                "log_line": "{'timestamp': '2026-02-05T11:04:58Z', 'level': 'INFO', 'service_id': 'k8s-prod-cluster', 'message': 'Pod restarted', 'metadata': {'pod': 'catalog-api'}}",
+                "reasoning": "Confirmation that the catalog-api pod was restarted after the OOMKilled event."
+              },
+              {
+                "timestamp": "2026-02-05T11:04:48Z",
+                "source": "monitoring",
+                "log_line": "{'timestamp': '2026-02-05T11:04:48Z', 'level': 'ALERT', 'service_id': 'catalog-api', 'message': 'ServiceRestartDetected', 'metadata': {}}",
+                "reasoning": "Monitoring alert indicating the restart of the catalog-api service."
+              },
+              {
+                "log_line": "{'timestamp': '2026-02-05T11:05:28Z', 'level': 'ALERT', 'service_id': 'catalog-api', 'message': 'MemoryNormalized', 'metadata': {'usage_pct': 45}}",
+                "reasoning": "Monitoring alert showing memory usage has normalized after the restart, confirming temporary resolution.",
+                "timestamp": "2026-02-05T11:05:28Z",
+                "source": "monitoring"
+              }
+            ]
+          }
+        }
+      ],
+      "llm_reasoning": "The `catalog-api` service experienced an OutOfMemoryError and was subsequently OOMKilled by the Kubernetes cluster. This was preceded by warnings about increasing cache size and high memory usage. I've searched long-term memory for similar incidents related to `catalog-api` and found two highly similar past incidents (INC-2026-12869B76 and INC-2026-C3A8DF28) that point to unexpected cache growth as the root cause. The proposed solutions from these past incidents will be used as a basis for the current recovery plan.\n\nI will now add the relevant log lines as evidence to the incident.",
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-04-15T14:26:52.316898+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "\u2705 Added 9 evidence items to INC-2026-DBEF9B37.",
+      "response_preview": null,
+      "tool_result": {
+        "tool_name": "add_evidence",
+        "content": "\u2705 Added 9 evidence items to INC-2026-DBEF9B37."
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-04-15T14:26:55.155787+00:00",
+      "tool_calls": [
+        {
+          "name": "add_recovery_steps",
+          "args": {
+            "incident_id": "INC-2026-DBEF9B37",
+            "steps": [
+              {
+                "risk_level": "MEDIUM",
+                "step_order": 1,
+                "step_description": "Based on INC-2026-12869B76 and INC-2026-C3A8DF28, immediately investigate the catalog-api service for potential memory leaks or inefficient cache management, focusing on the unexpected cache size growth. Prioritize reviewing recent code changes that might have introduced the cache size growth."
+              },
+              {
+                "step_description": "As a temporary mitigation, consider increasing the memory limits for the catalog-api container in the Kubernetes deployment (k8s-prod-cluster) to provide more headroom and reduce the frequency of OOMKills. This should be a temporary measure while a permanent fix is developed.",
+                "step_order": 2,
+                "risk_level": "HIGH"
+              },
+              {
+                "step_order": 3,
+                "risk_level": "HIGH",
+                "step_description": "Implement more aggressive cache eviction policies or introduce a maximum cache size limit within the catalog-api service to prevent unbounded cache growth."
+              },
+              {
+                "risk_level": "LOW",
+                "step_order": 4,
+                "step_description": "Add more detailed memory profiling and monitoring for catalog-api to proactively detect similar issues and gain deeper insights into memory consumption patterns."
+              }
+            ]
+          }
+        }
+      ],
+      "llm_reasoning": null,
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-04-15T14:26:55.196920+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "\u2705 Added 4 recovery steps to INC-2026-DBEF9B37.",
+      "response_preview": null,
+      "tool_result": {
+        "tool_name": "add_recovery_steps",
+        "content": "\u2705 Added 4 recovery steps to INC-2026-DBEF9B37."
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-04-15T14:26:56.974111+00:00",
+      "tool_calls": [
+        {
+          "name": "calculate_risk_score",
+          "args": {
+            "plan_text": "1. Based on INC-2026-12869B76 and INC-2026-C3A8DF28, immediately investigate the catalog-api service for potential memory leaks or inefficient cache management, focusing on the unexpected cache size growth. Prioritize reviewing recent code changes that might have introduced the cache size growth.\n2. As a temporary mitigation, consider increasing the memory limits for the catalog-api container in the Kubernetes deployment (k8s-prod-cluster) to provide more headroom and reduce the frequency of OOMKills. This should be a temporary measure while a permanent fix is developed.\n3. Implement more aggressive cache eviction policies or introduce a maximum cache size limit within the catalog-api service to prevent unbounded cache growth.\n4. Add more detailed memory profiling and monitoring for catalog-api to proactively detect similar issues and gain deeper insights into memory consumption patterns."
+          }
+        }
+      ],
+      "llm_reasoning": null,
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-04-15T14:26:56.984903+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "50",
+      "response_preview": null,
+      "tool_result": {
+        "tool_name": "calculate_risk_score",
+        "content": "50"
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-04-15T14:26:59.105743+00:00",
+      "tool_calls": [
+        {
+          "name": "finalize_incident",
+          "args": {
+            "recovery_plan": "1. Based on INC-2026-12869B76 and INC-2026-C3A8DF28, immediately investigate the catalog-api service for potential memory leaks or inefficient cache management, focusing on the unexpected cache size growth. Prioritize reviewing recent code changes that might have introduced the cache size growth.\n2. As a temporary mitigation, consider increasing the memory limits for the catalog-api container in the Kubernetes deployment (k8s-prod-cluster) to provide more headroom and reduce the frequency of OOMKills. This should be a temporary measure while a permanent fix is developed.\n3. Implement more aggressive cache eviction policies or introduce a maximum cache size limit within the catalog-api service to prevent unbounded cache growth.\n4. Add more detailed memory profiling and monitoring for catalog-api to proactively detect similar issues and gain deeper insights into memory consumption patterns.",
+            "app_id": "ecommerce-prod",
+            "risk_score": 50,
+            "agent_notes": "The catalog-api service experienced an OutOfMemoryError due to unexpected cache growth, leading to an OOMKilled event and subsequent restart. Historical incidents confirm this as a recurring issue. The recovery plan focuses on investigating the root cause of cache growth, implementing temporary memory limit increases, and establishing permanent cache management policies.",
+            "incident_id": "INC-2026-DBEF9B37"
+          }
+        }
+      ],
+      "llm_reasoning": null,
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-04-15T14:26:59.147307+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "\u2705 Incident INC-2026-DBEF9B37 finalized with risk score 50.",
+      "response_preview": null,
+      "tool_result": {
+        "tool_name": "finalize_incident",
+        "content": "\u2705 Incident INC-2026-DBEF9B37 finalized with risk score 50."
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-04-15T14:27:02.997179+00:00",
+      "tool_calls": [
+        {
+          "name": "create_linear_ticket",
+          "args": {
+            "risk_score": 50,
+            "description": "## Root Cause\nThe `catalog-api` service experienced an OutOfMemoryError due to unexpected cache growth, leading to an OOMKilled event and subsequent restart by the Kubernetes cluster. This issue has been identified in historical incidents as well.\n\n## Evidence Summary\n- **2026-02-05T11:02:10Z (catalog-api WARN):** \"Cache size growing unexpectedly\"\n- **2026-02-05T11:02:58Z (catalog-api ALERT):** \"HighMemory\" (usage_pct: 92)\n- **2026-02-05T11:03:18Z (catalog-api WARN):** \"High memory usage detected\" (usage_mb: 1500)\n- **2026-02-05T11:04:38Z (k8s-prod-cluster WARN):** \"Container memory usage critical\" (container: catalog-api, usage_pct: 96)\n- **2026-02-05T11:04:43Z (catalog-api ERROR):** \"OutOfMemoryError: allocation failed\"\n- **2026-02-05T11:04:42Z (k8s-prod-cluster ERROR):** \"Container terminated OOMKilled\" (container: catalog-api, reason: OOMKilled)\n- **2026-02-05T11:04:58Z (k8s-prod-cluster INFO):** \"Pod restarted\" (pod: catalog-api)\n- **2026-02-05T11:04:48Z (catalog-api ALERT):** \"ServiceRestartDetected\"\n- **2026-02-05T11:05:28Z (catalog-api ALERT):** \"MemoryNormalized\" (usage_pct: 45)\n\n## Recovery Plan\n1. Based on INC-2026-12869B76 and INC-2026-C3A8DF28, immediately investigate the catalog-api service for potential memory leaks or inefficient cache management, focusing on the unexpected cache size growth. Prioritize reviewing recent code changes that might have introduced the cache size growth.\n2. As a temporary mitigation, consider increasing the memory limits for the catalog-api container in the Kubernetes deployment (k8s-prod-cluster) to provide more headroom and reduce the frequency of OOMKills. This should be a temporary measure while a permanent fix is developed.\n3. Implement more aggressive cache eviction policies or introduce a maximum cache size limit within the catalog-api service to prevent unbounded cache growth.\n4. Add more detailed memory profiling and monitoring for catalog-api to proactively detect similar issues and gain deeper insights into memory consumption patterns.\n\n## Risk Score\n50\n\n## Affected Services\n- catalog-api",
+            "title": "INC-2026-DBEF9B37: catalog-api OOMKilled due to unexpected cache growth",
+            "incident_id": "INC-2026-DBEF9B37"
+          }
+        }
+      ],
+      "llm_reasoning": null,
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-04-15T14:27:03.537148+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "\u2705 Linear issue created and linked.\n   Identifier : ITS-7\n   ID (UUID)  : 1e6c0352-98f5-4ecb-8f7b-530472360110\n   URL        : https://linear.app/itsmagent/issue/ITS-7/inc-2026-dbef9b37-catalog-api-oomkilled-due-to-unexpected-cache-growth\n   Next step  : call save_resolved_ticket with linear_issue_id='1e6c0352-98f5-4ecb-8f7b-530472360110'",
+      "response_preview": null,
+      "tool_result": {
+        "tool_name": "create_linear_ticket",
+        "content": "\u2705 Linear issue created and linked.\n   Identifier : ITS-7\n   ID (UUID)  : 1e6c0352-98f5-4ecb-8f7b-530472360110\n   URL        : https://linear.app/itsmagent/issue/ITS-7/inc-2026-dbef9b37-catalog-api-oomkilled-due-to-unexpected-cache-growth\n   Next step  : call save_resolved_ticket with linear_issue_id='1e6c0352-98f5-4ecb-8f7b-530472360110'"
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-04-15T14:27:06.392784+00:00",
+      "tool_calls": [
+        {
+          "name": "save_resolved_ticket",
+          "args": {
+            "solution_text": "1. Based on INC-2026-12869B76 and INC-2026-C3A8DF28, immediately investigate the catalog-api service for potential memory leaks or inefficient cache management, focusing on the unexpected cache size growth. Prioritize reviewing recent code changes that might have introduced the cache size growth.\n2. As a temporary mitigation, consider increasing the memory limits for the catalog-api container in the Kubernetes deployment (k8s-prod-cluster) to provide more headroom and reduce the frequency of OOMKills. This should be a temporary measure while a permanent fix is developed.\n3. Implement more aggressive cache eviction policies or introduce a maximum cache size limit within the catalog-api service to prevent unbounded cache growth.\n4. Add more detailed memory profiling and monitoring for catalog-api to proactively detect similar issues and gain deeper insights into memory consumption patterns.",
+            "incident_id": "INC-2026-DBEF9B37",
+            "human_notes": "",
+            "problem_text": "The catalog-api service experienced an OutOfMemoryError and was subsequently OOMKilled by the Kubernetes cluster due to unexpected cache size growth, leading to a service restart. Evidence includes warnings about increasing cache size and high memory usage from the application and critical memory usage alerts from Kubernetes, culminating in the OOMKilled event.",
+            "app_id": "ecommerce-prod",
+            "affected_service_ids": [
+              "catalog-api"
+            ],
+            "risk_score": 50,
+            "linear_issue_id": "1e6c0352-98f5-4ecb-8f7b-530472360110",
+            "root_cause_node_id": "catalog-api"
+          }
+        }
+      ],
+      "llm_reasoning": null,
+      "response_preview": null
+    },
+    {
+      "node": "tools",
+      "timestamp": "2026-04-15T14:27:07.077003+00:00",
+      "tool_calls": [],
+      "llm_reasoning": "\u2705 ResolvedTicket 'INC-2026-DBEF9B37' saved and linked to: catalog-api. Problem and solution embeddings stored (768-dim).",
+      "response_preview": null,
+      "tool_result": {
+        "tool_name": "save_resolved_ticket",
+        "content": "\u2705 ResolvedTicket 'INC-2026-DBEF9B37' saved and linked to: catalog-api. Problem and solution embeddings stored (768-dim)."
+      }
+    },
+    {
+      "node": "agent",
+      "timestamp": "2026-04-15T14:27:08.007847+00:00",
+      "tool_calls": [],
+      "llm_reasoning": null,
+      "response_preview": null
+    }
+  ]
+}

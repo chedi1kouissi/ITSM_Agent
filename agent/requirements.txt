@@ -23,3 +23,6 @@ uvicorn
 neo4j
 langfuse
 langfuse.langchain
+requests                  # Linear API HTTP calls
+fastapi                   # Webhook server
+pyngrok                   # ngrok tunnel for local development

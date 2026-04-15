@@ -39,6 +39,9 @@ class AgentState(TypedDict):
     recovery_plan: Optional[RecoveryPlan]
     final_risk_score: Optional[int]
     ticket_status: str # "analyzing", "ticket_created", "human_approval_needed"
-    
+
+    # Linear integration (populated after create_linear_ticket succeeds)
+    linear_issue_id: Optional[str]
+
     # Standard LangGraph message history
     messages: Annotated[List[str], operator.add]

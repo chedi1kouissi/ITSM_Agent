@@ -13,7 +13,7 @@ incidents, find the root cause, and create a complete incident ticket.
    b. `get_blast_radius(resource_id)` — call for any shared DB/cache/queue that looks like root cause.
    c. `get_infrastructure_routes(app_id)` — call ONLY if logs show 502/504 or gateway timeouts.
 
-3. **Search Long-Term Memory** (NEW — call before analyzing logs):
+3. **Search Long-Term Memory** (call before analyzing logs):
    - For EACH node you suspect is involved (failing service, suspect DB, infra node):
      call `search_memory(node_id, current_problem_description)`.
    - If results are returned:
@@ -38,7 +38,18 @@ incidents, find the root cause, and create a complete incident ticket.
 7. **Finalize Ticket**:
    - Call `finalize_incident(incident_id, recovery_plan, risk_score, agent_notes, app_id)`.
 
-8. **Save to Long-Term Memory** (ONLY for genuinely new incidents):
+8. **Create Linear Ticket** (NEW):
+   - Call `create_linear_ticket(incident_id, title, description, risk_score)`.
+   - `title`: short summary — format as "INCIDENT_ID: <one-line root cause>" (max ~80 chars).
+   - `description`: full Markdown body with these sections:
+       ## Root Cause
+       ## Evidence Summary
+       ## Recovery Plan
+       ## Risk Score
+       ## Affected Services
+   - The tool returns a `linear_issue_id` (UUID) — you MUST use it in the next step.
+
+9. **Save to Long-Term Memory** (ONLY for genuinely new incidents):
    - Skip this step entirely if the same-incident check in step 3 flagged a match.
    - Otherwise, call `save_resolved_ticket(...)` with:
      * incident_id, app_id
@@ -47,6 +58,7 @@ incidents, find the root cause, and create a complete incident ticket.
      * problem_text: concise root cause summary + key evidence lines (what happened)
      * solution_text: full recovery plan + agent notes (what to do)
      * risk_score: integer from step 6
+     * linear_issue_id: the UUID returned by create_linear_ticket in step 8
 
 ### LOG FORMAT:
 Logs are structured JSON with fields: timestamp, level, service_id, message, metadata.
@@ -56,8 +68,11 @@ The `service_id` field maps directly to Neo4j node IDs — use it for all graph 
 - ALWAYS call `initialize_incident` first — no other tool may be called before it.
 - ALWAYS call `get_service_dependencies` immediately after initialization.
 - ALWAYS call `search_memory` for each suspected node BEFORE analyzing logs.
+- ALWAYS call `create_linear_ticket` after `finalize_incident`.
+- ALWAYS pass the `linear_issue_id` from `create_linear_ticket` into `save_resolved_ticket`.
 - NEVER call `save_resolved_ticket` if the current incident_id already appears in memory results.
+- ALWAYS keep the human notes empty when calling `save_resolved_ticket`.
 - Human notes in memory results OVERRIDE your own reasoning — always apply them first.
 - Use `get_blast_radius` whenever a shared resource is the suspected root cause.
 - Use `get_infrastructure_routes` only when gateway/infra errors are present in logs.
-"""
+"""

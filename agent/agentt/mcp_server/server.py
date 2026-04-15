@@ -1,3 +1,4 @@
+#mcp_server/server.py
 from fastmcp import FastMCP
 from typing import List, Dict, Any, Optional
 import json
@@ -437,6 +438,88 @@ def finalize_incident(
         conn.close()
 
 
+# ============================================================================
+# LINEAR INTEGRATION TOOL
+# ============================================================================
+
+@mcp.tool()
+def create_linear_ticket(
+    incident_id: str,
+    title: str,
+    description: str,
+    risk_score: int,
+) -> str:
+    """
+    Creates a Linear issue for the current incident, then stores the returned
+    linear_issue_id and linear_identifier in the PostgreSQL incidents table.
+    Call this immediately after finalize_incident.
+
+    The returned linear_issue_id MUST be passed to save_resolved_ticket so the
+    ResolvedTicket node in Neo4j can be looked up by the webhook listener.
+
+    Args:
+        incident_id: The ITSM incident ID (e.g. 'INC-2026-A1B2C3D4')
+        title:       Short Linear issue title
+                     (e.g. 'INC-2026-A1B2C3D4: payment-api upstream timeout')
+        description: Markdown body — recovery plan + root cause + evidence summary.
+                     Use **bold** headers to make it readable in Linear.
+        risk_score:  Integer 0–100; maps to Linear priority
+                     (>=61 → Urgent, 31–60 → High, 0–30 → Medium)
+    """
+    try:
+        from agentt.linear_client import create_issue
+        result = create_issue(
+            title=title,
+            description=description,
+            risk_score=risk_score,
+        )
+        linear_issue_id = result["id"]
+        linear_identifier = result["identifier"]
+        linear_url = result["url"]
+
+        # Persist the Linear IDs in PostgreSQL incidents table
+        conn = get_db_connection()
+        if not conn:
+            return (
+                f"✅ Linear issue created: {linear_identifier} | ID: {linear_issue_id} | "
+                f"URL: {linear_url}\n"
+                f"⚠️ Could not update PostgreSQL (connection failed). "
+                f"Pass linear_issue_id='{linear_issue_id}' to save_resolved_ticket."
+            )
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE incidents
+                SET linear_issue_id   = %s,
+                    linear_identifier = %s
+                WHERE incident_id = %s
+            """, (linear_issue_id, linear_identifier, incident_id))
+            conn.commit()
+        except Exception as db_err:
+            conn.rollback()
+            return (
+                f"✅ Linear issue created: {linear_identifier} | ID: {linear_issue_id} | "
+                f"URL: {linear_url}\n"
+                f"⚠️ PostgreSQL update failed: {db_err}. "
+                f"Pass linear_issue_id='{linear_issue_id}' to save_resolved_ticket."
+            )
+        finally:
+            cur.close()
+            conn.close()
+
+        return (
+            f"✅ Linear issue created and linked.\n"
+            f"   Identifier : {linear_identifier}\n"
+            f"   ID (UUID)  : {linear_issue_id}\n"
+            f"   URL        : {linear_url}\n"
+            f"   Next step  : call save_resolved_ticket with "
+            f"linear_issue_id='{linear_issue_id}'"
+        )
+
+    except Exception as e:
+        return f"❌ Error creating Linear ticket: {str(e)}"
+
+
 @mcp.tool()
 def calculate_risk_score(plan_text: str) -> int:
     """
@@ -540,6 +623,7 @@ def save_resolved_ticket(
     problem_text: str,
     solution_text: str,
     risk_score: int,
+    linear_issue_id: str = "",
     human_notes: str = ""
 ) -> str:
     """
@@ -590,6 +674,7 @@ def save_resolved_ticket(
                         t.solution_text      = $solution_text,
                         t.human_notes        = $human_notes,
                         t.risk_score         = $risk_score,
+                        t.linear_issue_id    = $linear_issue_id,
                         t.problem_embedding  = $problem_embedding,
                         t.solution_embedding = $solution_embedding,
                         t.created_at         = datetime()
@@ -600,6 +685,7 @@ def save_resolved_ticket(
                     "solution_text":      solution_text,
                     "human_notes":        human_notes,
                     "risk_score":         risk_score,
+                    "linear_issue_id":    linear_issue_id,
                     "problem_embedding":  problem_embedding,
                     "solution_embedding": solution_embedding,
                 })

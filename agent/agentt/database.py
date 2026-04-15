@@ -55,9 +55,16 @@ def init_db():
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         """)
-       
+
+        # 4. Linear integration columns (safe to run on existing deployments)
+        cur.execute("""
+            ALTER TABLE incidents
+                ADD COLUMN IF NOT EXISTS linear_issue_id   VARCHAR(100),
+                ADD COLUMN IF NOT EXISTS linear_identifier VARCHAR(20);
+        """)
+
         conn.commit()
-        print("✅ Database initialized successfully with app_id support.")
+        print("✅ Database initialized successfully (incidents + Linear columns).")
     except Exception as e:
         print(f"❌ Init Error: {e}")
         conn.rollback()

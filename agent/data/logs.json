@@ -2,65 +2,86 @@
   "app_id": "ecommerce-prod",
   "app_logs": [
     {
-      "timestamp": "2026-02-05T12:00:00Z",
+      "timestamp": "2026-02-05T11:00:00Z",
       "level": "INFO",
-      "service_id": "payment-api",
-      "message": "Payment processed",
-      "metadata": { "latency_ms": 300 }
+      "service_id": "catalog-api",
+      "message": "Request completed",
+      "metadata": { "status": 200, "latency_ms": 21 }
     },
     {
-      "timestamp": "2026-02-05T12:02:15Z",
+      "timestamp": "2026-02-05T11:00:05Z",
+      "level": "INFO",
+      "service_id": "catalog-api",
+      "message": "Request completed",
+      "metadata": { "status": 200, "latency_ms": 31 }
+    },
+    {
+      "timestamp": "2026-02-05T11:02:10Z",
       "level": "WARN",
-      "service_id": "payment-api",
-      "message": "External API slow response",
-      "metadata": { "latency_ms": 2500 }
+      "service_id": "catalog-api",
+      "message": "Cache size growing unexpectedly",
+      "metadata": { "size_mb": 850 }
     },
     {
-      "timestamp": "2026-02-05T12:03:22Z",
+      "timestamp": "2026-02-05T11:03:18Z",
+      "level": "WARN",
+      "service_id": "catalog-api",
+      "message": "High memory usage detected",
+      "metadata": { "usage_mb": 1500 }
+    },
+    {
+      "timestamp": "2026-02-05T11:04:43Z",
       "level": "ERROR",
-      "service_id": "payment-api",
-      "message": "Payment failed: upstream timeout",
+      "service_id": "catalog-api",
+      "message": "OutOfMemoryError: allocation failed",
       "metadata": {}
-    },
-    {
-      "timestamp": "2026-02-05T12:03:40Z",
-      "level": "ERROR",
-      "service_id": "payment-api",
-      "message": "Retry attempt failed",
-      "metadata": { "request_id": "req_502" }
     }
   ],
   "database_logs": [],
   "infrastructure_logs": [
     {
-      "timestamp": "2026-02-05T12:03:30Z",
-      "level": "ERROR",
-      "service_id": "api-gateway-prod",
-      "message": "Upstream timeout",
-      "metadata": { "target": "payment-provider" }
+      "timestamp": "2026-02-05T11:04:38Z",
+      "level": "WARN",
+      "service_id": "k8s-prod-cluster",
+      "message": "Container memory usage critical",
+      "metadata": { "container": "catalog-api", "usage_pct": 96 }
     },
     {
-      "timestamp": "2026-02-05T12:03:42Z",
+      "timestamp": "2026-02-05T11:04:42Z",
       "level": "ERROR",
-      "service_id": "api-gateway-prod",
-      "message": "HTTP 502 Bad Gateway",
-      "metadata": { "target": "payment-provider" }
+      "service_id": "k8s-prod-cluster",
+      "message": "Container terminated OOMKilled",
+      "metadata": { "container": "catalog-api", "reason": "OOMKilled" }
+    },
+    {
+      "timestamp": "2026-02-05T11:04:58Z",
+      "level": "INFO",
+      "service_id": "k8s-prod-cluster",
+      "message": "Pod restarted",
+      "metadata": { "pod": "catalog-api" }
     }
   ],
   "monitoring_logs": [
     {
-      "timestamp": "2026-02-05T12:02:30Z",
+      "timestamp": "2026-02-05T11:02:58Z",
       "level": "ALERT",
-      "service_id": "payment-api",
-      "message": "ExternalDependencyLatency",
-      "metadata": { "service": "payment-provider", "latency_ms": 3200 }
+      "service_id": "catalog-api",
+      "message": "HighMemory",
+      "metadata": { "usage_pct": 92 }
     },
     {
-      "timestamp": "2026-02-05T12:03:35Z",
+      "timestamp": "2026-02-05T11:04:48Z",
       "level": "ALERT",
-      "service_id": "payment-api",
-      "message": "ErrorRateSpike",
-      "metadata": { "error_rate_pct": 28 }
+      "service_id": "catalog-api",
+      "message": "ServiceRestartDetected",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-02-05T11:05:28Z",
+      "level": "ALERT",
+      "service_id": "catalog-api",
+      "message": "MemoryNormalized",
+      "metadata": { "usage_pct": 45 }
     }
   ]
 }

@@ -377,3 +377,48 @@ SET r.protocol = "HTTP", r.timeout_ms = 60000;
 MATCH (gw:Infrastructure {id: "api-gateway-internal"}), (s:Service {id: "reporting-api"})
 MERGE (gw)-[r:ROUTES_TO]->(s)
 SET r.protocol = "HTTP", r.timeout_ms = 120000, r.path_prefix = "/reports";
+
+
+
+
+
+
+
+
+
+
+
+report :
+What It Is
+An autonomous Graph-Aware ITSM Agent — feed it a batch of JSON logs, and it uses an AI reasoning loop to produce a full incident ticket: root cause, evidence chain, recovery plan, risk score, all stored to databases and linked into a knowledge graph.
+
+How It Works — End-to-End Flow
+logs.json → main.py → LangGraph ReAct Loop → PostgreSQL + Neo4j → run_logs/INC-*.json
+main.py loads data/logs.json, generates an INC-YYYY-XXXXXXXX ID, and starts streaming the LangGraph agent. Each LangGraph "node" that executes gets a Langfuse span for observability.
+
+The LangGraph loop (graph.py) is a simple agent ↔ tools cycle:
+
+agent node: Gemini 2.5 Flash sees the system prompt + full conversation history → decides what tool to call next.
+tools node: LangChain ToolNode executes the tool, returns results → back to agent.
+Loop ends when the agent produces a message with no tool calls.
+The 8-Step Enforced Workflow (via SYSTEM_PROMPT)
+#	Tool	What Happens
+1	initialize_incident	Creates a Postgres incidents row with status ANALYZING
+2a	get_service_dependencies	2-hop Cypher query → full topology map (Services, DBs, Infra, edge props like pool_size)
+2b	get_blast_radius	Finds ALL services across ALL apps depending on the suspected failing resource
+2c	get_infrastructure_routes	Only triggered by 502/504 gateway errors
+3	search_memory	Vector similarity search in Neo4j — localized to the suspect node's linked ResolvedTicket nodes
+4	add_evidence	Saves causal-chain log lines to Postgres evidence table
+5	add_recovery_steps	Saves ordered fix steps to Postgres recovery_steps table
+6	calculate_risk_score	Pure Python keyword detection: HIGH=+30, MEDIUM=+15, LOW=+5, capped at 100
+7	finalize_incident	Updates Postgres: status → OPEN, writes plan + notes
+8	save_resolved_ticket	Writes to Neo4j: MERGE a ResolvedTicket node with 768-dim Gemini embeddings (problem + solution), linked via HAS_MEMORY edges to the root cause node + all affected services
+The Two Databases — Dual Purpose
+PostgreSQL: Structured, queryable incident records (incidents, evidence, recovery_steps tables). The "ticket system."
+Neo4j: Two jobs — (1) topology graph used for dependency/blast-radius reasoning during analysis, (2) vector long-term memory. Past incidents live as ResolvedTicket nodes linked to the services/DBs they affected.
+Key Design Decisions Worth Knowing
+GraphRAG, not flat vector search — Memory search is scoped to the graph node being investigated. This prevents cross-service false positives.
+FastMCP bridging — Tools are defined with @mcp.tool() for MCP compatibility, then unwrapped (.fn) and re-wrapped as LangChain StructuredTools. This is why graph.py does initialize_incident.fn.
+shared-analytics-db in the Neo4j graph is intentionally shared across ecommerce-prod and admin-portal — it's the designed cross-app blast-radius test case.
+Human notes override AI reasoning — ResolvedTicket.human_notes is surfaced in search_memory results with a ⚠️ flag and the system prompt explicitly says those notes take priority over the agent's own analysis.
+See the artifact for the full deep-dive including schema diagrams, all relationship types, and the complete environment config.
