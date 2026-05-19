@@ -112,11 +112,14 @@ def run_agent():
     langfuse_handler.trace_id = trace.id
 
     initial_state = {
+        "incident_id": incident_id,
+        "app_id": app_id,
         "messages": [
             ("user", f"""Incident ID: {incident_id}
 App ID: {app_id}
 
 Please analyze the following log batch and create a complete incident ticket.
+Note: The log batch does NOT contain an incident_id. Do NOT search for or expect one in the logs, and do NOT generate or invent a different one.
 
 LOG DATA:
 {raw_logs_str}
@@ -128,7 +131,7 @@ Instructions:
 4. Calculate the risk score
 5. Save everything to the database using the appropriate tools in order
 
-Use incident_id="{incident_id}" and app_id="{app_id}" for ALL database operations.
+Use the provided incident_id="{incident_id}" and app_id="{app_id}" for ALL database and graph operations.
 """)
         ],
         "raw_logs": raw_logs_str,

@@ -221,9 +221,23 @@ llm_with_tools = llm.bind_tools(tools)
 # 7. Agent Node
 def agent_node(state: AgentState):
     messages = state["messages"]
+    incident_id = state.get("incident_id")
+    app_id = state.get("app_id")
+
+    # Construct custom prompt dynamically with exact run context IDs
+    custom_prompt = SYSTEM_PROMPT
+    if incident_id or app_id:
+        custom_prompt += "\n\n### CRITICAL RUN CONTEXT (REQUIRED):\n"
+        if incident_id:
+            custom_prompt += f"- The current incident_id is '{incident_id}'. You MUST use this exact ID for all tool calls (initialize_incident, add_evidence, add_recovery_steps, finalize_incident, create_linear_ticket, save_resolved_ticket).\n"
+        if app_id:
+            custom_prompt += f"- The current app_id is '{app_id}'. You MUST use this exact ID for all tool calls.\n"
+        custom_prompt += "- The log batch does NOT contain an incident_id. Do NOT search the log batch for it, do NOT expect it to be there, and do NOT generate or invent a different one.\n"
 
     if not messages or not isinstance(messages[0], SystemMessage):
-        messages = [SystemMessage(content=SYSTEM_PROMPT)] + list(messages)
+        messages = [SystemMessage(content=custom_prompt)] + list(messages)
+    else:
+        messages = [SystemMessage(content=custom_prompt)] + list(messages[1:])
 
     response = llm_with_tools.invoke(messages)
     return {"messages": [response]}

@@ -25,6 +25,10 @@ class AgentState(TypedDict):
     The memory of the agent during the execution loop.
     messages: Holds the conversation history (User inputs + AI responses).
     """
+    # Run Context
+    incident_id: str
+    app_id: str
+
     # Raw Inputs
     raw_logs: str  # The massive log dump
     

@@ -65,6 +65,8 @@ Logs are structured JSON with fields: timestamp, level, service_id, message, met
 The `service_id` field maps directly to Neo4j node IDs — use it for all graph lookups.
 
 ### IMPORTANT RULES:
+- The `incident_id` and `app_id` are provided by the system context. The log batch does NOT contain an incident ID. Do NOT search for or expect an incident ID in the logs, and do NOT generate or invent a different one.
+- ALWAYS use the exact `incident_id` and `app_id` provided in the system message context for ALL tool calls.
 - ALWAYS call `initialize_incident` first — no other tool may be called before it.
 - ALWAYS call `get_service_dependencies` immediately after initialization.
 - ALWAYS call `search_memory` for each suspected node BEFORE analyzing logs.
