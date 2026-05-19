@@ -20,6 +20,7 @@ incidents, find the root cause, and create a complete incident ticket.
      * Read the past problem and solution carefully.
      * Check human_notes FIRST — these override your own reasoning.
      * Use the historical fix as your starting point, not a blank slate.
+     * If similarity is high (>= 0.80), note down the historical `incident_id` as the historical match ID.
    - If no results: proceed with fresh analysis.
 
 4. **Save Evidence**:
@@ -38,7 +39,7 @@ incidents, find the root cause, and create a complete incident ticket.
 7. **Finalize Ticket**:
    - Call `finalize_incident(incident_id, recovery_plan, risk_score, agent_notes, app_id)`.
 
-8. **Create Linear Ticket** (NEW):
+8. **Create Linear Ticket** :
    - Call `create_linear_ticket(incident_id, title, description, risk_score)`.
    - `title`: short summary — format as "INCIDENT_ID: <one-line root cause>" (max ~80 chars).
    - `description`: full Markdown body with these sections:
@@ -49,9 +50,8 @@ incidents, find the root cause, and create a complete incident ticket.
        ## Affected Services
    - The tool returns a `linear_issue_id` (UUID) — you MUST use it in the next step.
 
-9. **Save to Long-Term Memory** (ONLY for genuinely new incidents):
-   - Skip this step entirely if the same-incident check in step 3 flagged a match.
-   - Otherwise, call `save_resolved_ticket(...)` with:
+9. **Save to Long-Term Memory**:
+   - Call `save_resolved_ticket(...)` with:
      * incident_id, app_id
      * root_cause_node_id: the single Neo4j node ID that is the root cause
      * affected_service_ids: list of all service node IDs that were impacted
@@ -59,6 +59,7 @@ incidents, find the root cause, and create a complete incident ticket.
      * solution_text: full recovery plan + agent notes (what to do)
      * risk_score: integer from step 6
      * linear_issue_id: the UUID returned by create_linear_ticket in step 8
+     * historical_incident_id: if the same-incident check in step 3 flagged a match, you MUST pass that matched historical `incident_id` here. Otherwise, leave it empty.
 
 ### LOG FORMAT:
 Logs are structured JSON with fields: timestamp, level, service_id, message, metadata.
@@ -72,9 +73,9 @@ The `service_id` field maps directly to Neo4j node IDs — use it for all graph 
 - ALWAYS call `search_memory` for each suspected node BEFORE analyzing logs.
 - ALWAYS call `create_linear_ticket` after `finalize_incident`.
 - ALWAYS pass the `linear_issue_id` from `create_linear_ticket` into `save_resolved_ticket`.
-- NEVER call `save_resolved_ticket` if the current incident_id already appears in memory results.
+- If the current incident matches a historical memory by context, you MUST still call `save_resolved_ticket` and pass the matched memory's `incident_id` as `historical_incident_id`. Do NOT leave `historical_incident_id` empty for matches.
 - ALWAYS keep the human notes empty when calling `save_resolved_ticket`.
 - Human notes in memory results OVERRIDE your own reasoning — always apply them first.
 - Use `get_blast_radius` whenever a shared resource is the suspected root cause.
 - Use `get_infrastructure_routes` only when gateway/infra errors are present in logs.
-"""
+"""

@@ -92,10 +92,13 @@ def _find_ticket_by_linear_id(session, linear_issue_id: str) -> Optional[dict]:
     """Returns the ResolvedTicket node dict, or None if not found."""
     result = session.run(
         """
-        MATCH (t:ResolvedTicket {linear_issue_id: $linear_issue_id})
+        MATCH (t:ResolvedTicket)
+        WHERE t.linear_issue_id = $linear_issue_id 
+           OR $linear_issue_id IN coalesce(t.linear_issue_ids, [])
         RETURN t.incident_id    AS incident_id,
                t.solution_text  AS solution_text,
-               t.human_notes    AS human_notes
+               t.human_notes    AS human_notes,
+               coalesce(t.processed_comment_ids, []) AS processed_comment_ids
         """,
         {"linear_issue_id": linear_issue_id},
     )
@@ -103,9 +106,10 @@ def _find_ticket_by_linear_id(session, linear_issue_id: str) -> Optional[dict]:
     if not record:
         return None
     return {
-        "incident_id":   record["incident_id"],
-        "solution_text": record["solution_text"] or "",
-        "human_notes":   record["human_notes"]   or "",
+        "incident_id":           record["incident_id"],
+        "solution_text":         record["solution_text"] or "",
+        "human_notes":           record["human_notes"]   or "",
+        "processed_comment_ids": record["processed_comment_ids"] or [],
     }
 
 
@@ -123,18 +127,27 @@ def _update_ticket_notes(
     linear_issue_id: str,
     human_notes: str,
     solution_embedding: list,
+    comment_id: str = None
 ) -> None:
     """Writes updated human_notes and re-computed solution_embedding to Neo4j."""
     session.run(
         """
-        MATCH (t:ResolvedTicket {linear_issue_id: $linear_issue_id})
+        MATCH (t:ResolvedTicket)
+        WHERE t.linear_issue_id = $linear_issue_id 
+           OR $linear_issue_id IN coalesce(t.linear_issue_ids, [])
         SET t.human_notes        = $human_notes,
             t.solution_embedding = $solution_embedding
+        SET t.processed_comment_ids = CASE 
+          WHEN $comment_id IS NOT NULL AND NOT $comment_id IN coalesce(t.processed_comment_ids, []) 
+          THEN coalesce(t.processed_comment_ids, []) + $comment_id 
+          ELSE coalesce(t.processed_comment_ids, []) 
+        END
         """,
         {
-            "linear_issue_id":   linear_issue_id,
-            "human_notes":       human_notes,
+            "linear_issue_id":    linear_issue_id,
+            "human_notes":        human_notes,
             "solution_embedding": solution_embedding,
+            "comment_id":         comment_id,
         },
     )
 
@@ -166,6 +179,8 @@ async def linear_webhook(request: Request):
     Only processes Comment → create events.
     All other event types are silently acknowledged (200 OK).
     """
+    from anyio.to_thread import run_sync
+
     # 1. Read raw body before any parsing (needed for HMAC)
     payload_bytes = await request.body()
     signature     = request.headers.get("Linear-Signature", "")
@@ -201,8 +216,9 @@ async def linear_webhook(request: Request):
     comment_body = (data.get("body") or "").strip()
     author       = (data.get("user") or {}).get("name", "Unknown")
     issue        = (data.get("issue") or {})
-    linear_issue_id  = issue.get("id", "")
+    linear_issue_id  = issue.get("id", "") or data.get("issueId", "")
     linear_identifier = issue.get("identifier", "")
+    comment_id   = data.get("id", "")
 
     if not linear_issue_id or not comment_body:
         return {
@@ -216,50 +232,66 @@ async def linear_webhook(request: Request):
         f"   Body   : {comment_body[:120]}{'...' if len(comment_body) > 120 else ''}"
     )
 
-    # 6. Look up the ResolvedTicket node in Neo4j
-    with neo4j_driver.session() as session:
-        ticket = _find_ticket_by_linear_id(session, linear_issue_id)
+    # 6. Look up the ResolvedTicket node in Neo4j (offloaded to thread)
+    def db_lookup():
+        with neo4j_driver.session() as session:
+            return _find_ticket_by_linear_id(session, linear_issue_id)
 
-        if not ticket:
-            print(
-                f"   ℹ️  No ResolvedTicket found for linear_issue_id='{linear_issue_id}'. "
-                f"Possibly a non-ITSM issue — ignoring."
-            )
-            return {
-                "status": "ignored",
-                "reason": f"No ResolvedTicket linked to linear_issue_id '{linear_issue_id}'.",
-            }
+    ticket = await run_sync(db_lookup)
 
-        incident_id = ticket["incident_id"]
-        print(f"   ✅ Matched ResolvedTicket: {incident_id}")
-
-        # 7. Append note
-        updated_notes = _append_note(
-            existing_notes=ticket["human_notes"],
-            author=author,
-            body=comment_body,
-        )
-
-        # 8. Re-embed solution (solution_text + updated human_notes)
-        full_solution = ticket["solution_text"]
-        if updated_notes:
-            full_solution = f"{full_solution}\n\nHuman notes: {updated_notes}"
-
-        print("   🔄 Re-embedding solution vector...")
-        new_embedding = _embed_document(full_solution)
-
-        # 9. Write back to Neo4j
-        _update_ticket_notes(
-            session=session,
-            linear_issue_id=linear_issue_id,
-            human_notes=updated_notes,
-            solution_embedding=new_embedding,
-        )
-
+    if not ticket:
         print(
-            f"   💾 human_notes updated and solution_embedding re-computed "
-            f"for {incident_id}."
+            f"   ℹ️  No ResolvedTicket found for linear_issue_id='{linear_issue_id}'. "
+            f"Possibly a non-ITSM issue — ignoring."
         )
+        return {
+            "status": "ignored",
+            "reason": f"No ResolvedTicket linked to linear_issue_id '{linear_issue_id}'.",
+        }
+
+    # Deduplicate comments to avoid duplicate appends on webhook retries
+    if comment_id and comment_id in ticket.get("processed_comment_ids", []):
+        print(f"   ⚠️ Duplicate webhook comment '{comment_id}' ignored.")
+        return {
+            "status": "ignored",
+            "reason": f"Comment '{comment_id}' has already been processed.",
+        }
+
+    incident_id = ticket["incident_id"]
+    print(f"   ✅ Matched ResolvedTicket: {incident_id}")
+
+    # 7. Append note
+    updated_notes = _append_note(
+        existing_notes=ticket["human_notes"],
+        author=author,
+        body=comment_body,
+    )
+
+    # 8. Re-embed solution (solution_text + updated human_notes)
+    full_solution = ticket["solution_text"]
+    if updated_notes:
+        full_solution = f"{full_solution}\n\nHuman notes: {updated_notes}"
+
+    print("   🔄 Re-embedding solution vector...")
+    new_embedding = await run_sync(_embed_document, full_solution)
+
+    # 9. Write back to Neo4j (offloaded to thread)
+    def db_update():
+        with neo4j_driver.session() as session:
+            _update_ticket_notes(
+                session=session,
+                linear_issue_id=linear_issue_id,
+                human_notes=updated_notes,
+                solution_embedding=new_embedding,
+                comment_id=comment_id,
+            )
+
+    await run_sync(db_update)
+
+    print(
+        f"   💾 human_notes updated and solution_embedding re-computed "
+        f"for {incident_id}."
+    )
 
     return {
         "status":      "ok",

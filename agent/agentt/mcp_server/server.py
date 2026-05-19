@@ -624,98 +624,153 @@ def save_resolved_ticket(
     solution_text: str,
     risk_score: int,
     linear_issue_id: str = "",
-    human_notes: str = ""
+    human_notes: str = "",
+    historical_incident_id: str = ""
 ) -> str:
     """
-    Creates a ResolvedTicket node in Neo4j, embeds problem and solution text
-    as vectors, and links the ticket to the root cause node and all affected
-    service nodes via HAS_MEMORY relationships.
- 
-    Call this IMMEDIATELY after finalize_incident.
- 
+    Creates or updates a ResolvedTicket node in Neo4j, and links it to the root cause
+    node and affected service nodes via HAS_MEMORY relationships.
+
+    If historical_incident_id is provided, the tool attempts to find the existing
+    ResolvedTicket node with that ID. If found, it appends the new linear_issue_id
+    to the node's linear_issue_ids list property, consolidating all occurrences.
+    Otherwise, it creates a new ResolvedTicket node.
+
     Args:
-        incident_id: The incident ID (e.g. 'INC-2026-0004')
+        incident_id: The current incident ID (e.g. 'INC-2026-0004')
         app_id: The application ID (e.g. 'admin-portal')
         root_cause_node_id: The Neo4j node ID of the root cause
-                            (e.g. 'prod-node-2', 'payment-db', 'redis-cache')
         affected_service_ids: List of service node IDs directly affected
-                              (e.g. ['reporting-api', 'admin-service'])
-        problem_text: Root cause summary + key evidence. This is what gets
-                      embedded for future similarity search.
-        solution_text: Full recovery plan + agent notes. Combined with
-                       human_notes before embedding.
+        problem_text: Root cause summary + key evidence.
+        solution_text: Full recovery plan + agent notes.
         risk_score: Risk score from calculate_risk_score (0-100)
+        linear_issue_id: Optional Linear issue UUID.
         human_notes: Optional human-added notes (leave empty initially).
-                     When updated later, the solution embedding is recomputed.
+        historical_incident_id: Optional incident ID of an existing similar LTM ticket.
+                                If provided, links the new Linear issue to this memory node.
     """
     try:
-        # Build the full solution text (human notes baked in)
-        full_solution = solution_text
-        if human_notes:
-            full_solution = f"{solution_text}\n\nHuman notes: {human_notes}"
-
-        # Embed both vectors (done BEFORE opening the transaction to avoid
-        # holding a DB connection open during slow API calls)
-        problem_embedding = _embed(problem_text)
-        solution_embedding = _embed(full_solution)
-
         # All node IDs to link (root cause + affected services, deduplicated)
         all_linked_nodes = list(set([root_cause_node_id] + affected_service_ids))
 
-        # Use a single explicit transaction so the node + all HAS_MEMORY edges
-        # are written atomically — either everything commits or nothing does.
-        with neo4j_driver.session() as session:
-            with session.begin_transaction() as tx:
-                # 1. Create / update the ResolvedTicket node
-                tx.run("""
-                    MERGE (t:ResolvedTicket {incident_id: $incident_id})
-                    SET t.app_id             = $app_id,
-                        t.problem_text       = $problem_text,
-                        t.solution_text      = $solution_text,
-                        t.human_notes        = $human_notes,
-                        t.risk_score         = $risk_score,
-                        t.linear_issue_id    = $linear_issue_id,
-                        t.problem_embedding  = $problem_embedding,
-                        t.solution_embedding = $solution_embedding,
-                        t.created_at         = datetime()
-                """, {
-                    "incident_id":        incident_id,
-                    "app_id":             app_id,
-                    "problem_text":       problem_text,
-                    "solution_text":      solution_text,
-                    "human_notes":        human_notes,
-                    "risk_score":         risk_score,
-                    "linear_issue_id":    linear_issue_id,
-                    "problem_embedding":  problem_embedding,
-                    "solution_embedding": solution_embedding,
-                })
+        # Check if the historical incident exists
+        is_historical = False
+        if historical_incident_id:
+            with neo4j_driver.session() as session:
+                res = session.run(
+                    "MATCH (t:ResolvedTicket {incident_id: $hist_id}) RETURN count(t) AS cnt",
+                    {"hist_id": historical_incident_id}
+                )
+                record = res.single()
+                if record and record["cnt"] > 0:
+                    is_historical = True
 
-                # 2. Link to every relevant node (root cause + affected services)
-                missing_nodes = []
-                for node_id in all_linked_nodes:
-                    result = tx.run("""
-                        MATCH (n {id: $node_id})
-                        MATCH (t:ResolvedTicket {incident_id: $incident_id})
-                        MERGE (n)-[:HAS_MEMORY]->(t)
-                        RETURN count(n) AS linked
+        # If it is a new incident type, we calculate embeddings and create a new node
+        if not is_historical:
+            full_solution = solution_text
+            if human_notes:
+                full_solution = f"{solution_text}\n\nHuman notes: {human_notes}"
+
+            problem_embedding = _embed(problem_text)
+            solution_embedding = _embed(full_solution)
+
+            with neo4j_driver.session() as session:
+                with session.begin_transaction() as tx:
+                    # 1. Create a new ResolvedTicket node
+                    tx.run("""
+                        MERGE (t:ResolvedTicket {incident_id: $incident_id})
+                        SET t.app_id             = $app_id,
+                            t.problem_text       = $problem_text,
+                            t.solution_text      = $solution_text,
+                            t.human_notes        = $human_notes,
+                            t.risk_score         = $risk_score,
+                            t.linear_issue_id    = $linear_issue_id,
+                            t.linear_issue_ids   = [$linear_issue_id],
+                            t.problem_embedding  = $problem_embedding,
+                            t.solution_embedding = $solution_embedding,
+                            t.created_at         = datetime()
                     """, {
-                        "node_id":     node_id,
-                        "incident_id": incident_id,
+                        "incident_id":        incident_id,
+                        "app_id":             app_id,
+                        "problem_text":       problem_text,
+                        "solution_text":      solution_text,
+                        "human_notes":        human_notes,
+                        "risk_score":         risk_score,
+                        "linear_issue_id":    linear_issue_id,
+                        "problem_embedding":  problem_embedding,
+                        "solution_embedding": solution_embedding,
                     })
-                    record = result.single()
-                    if not record or record["linked"] == 0:
-                        missing_nodes.append(node_id)
 
-                tx.commit()
+                    # 2. Link to every relevant node
+                    missing_nodes = []
+                    for node_id in all_linked_nodes:
+                        result = tx.run("""
+                            MATCH (n {id: $node_id})
+                            MATCH (t:ResolvedTicket {incident_id: $incident_id})
+                            MERGE (n)-[:HAS_MEMORY]->(t)
+                            RETURN count(n) AS linked
+                        """, {
+                            "node_id":     node_id,
+                            "incident_id": incident_id,
+                        })
+                        record = result.single()
+                        if not record or record["linked"] == 0:
+                            missing_nodes.append(node_id)
 
-        linked_str = ", ".join(all_linked_nodes)
-        warning = ""
-        if missing_nodes:
-            warning = f" ⚠️ Warning: could not link to nodes (not found in graph): {', '.join(missing_nodes)}."
-        return (
-            f"✅ ResolvedTicket '{incident_id}' saved and linked to: {linked_str}. "
-            f"Problem and solution embeddings stored (768-dim).{warning}"
-        )
+                    tx.commit()
+            
+            linked_str = ", ".join(all_linked_nodes)
+            warning = ""
+            if missing_nodes:
+                warning = f" ⚠️ Warning: could not link to nodes: {', '.join(missing_nodes)}."
+            return (
+                f"✅ New ResolvedTicket '{incident_id}' saved and linked to: {linked_str}. "
+                f"Problem and solution embeddings stored.{warning}"
+            )
+        
+        else:
+            # If historical incident is matched, update it by appending linear_issue_id
+            with neo4j_driver.session() as session:
+                with session.begin_transaction() as tx:
+                    # 1. Update existing ResolvedTicket node
+                    tx.run("""
+                        MATCH (t:ResolvedTicket {incident_id: $historical_incident_id})
+                        SET t.linear_issue_ids = CASE 
+                              WHEN $linear_issue_id IN coalesce(t.linear_issue_ids, []) THEN t.linear_issue_ids 
+                              ELSE coalesce(t.linear_issue_ids, []) + $linear_issue_id 
+                            END,
+                            t.linear_issue_id = $linear_issue_id
+                    """, {
+                        "historical_incident_id": historical_incident_id,
+                        "linear_issue_id":        linear_issue_id,
+                    })
+
+                    # 2. Link to every relevant node (if not already linked)
+                    missing_nodes = []
+                    for node_id in all_linked_nodes:
+                        result = tx.run("""
+                            MATCH (n {id: $node_id})
+                            MATCH (t:ResolvedTicket {incident_id: $historical_incident_id})
+                            MERGE (n)-[:HAS_MEMORY]->(t)
+                            RETURN count(n) AS linked
+                        """, {
+                            "node_id":                node_id,
+                            "historical_incident_id": historical_incident_id,
+                        })
+                        record = result.single()
+                        if not record or record["linked"] == 0:
+                            missing_nodes.append(node_id)
+
+                    tx.commit()
+            
+            linked_str = ", ".join(all_linked_nodes)
+            warning = ""
+            if missing_nodes:
+                warning = f" ⚠️ Warning: could not link to nodes: {', '.join(missing_nodes)}."
+            return (
+                f"✅ Linked ticket '{linear_issue_id}' to historical ResolvedTicket '{historical_incident_id}' "
+                f"linked to services: {linked_str}.{warning}"
+            )
 
     except Exception as e:
         return f"❌ Error saving resolved ticket: {str(e)}"

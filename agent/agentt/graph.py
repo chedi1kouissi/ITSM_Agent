@@ -90,7 +90,8 @@ def _save_resolved_ticket(
     solution_text: str,
     risk_score: int,
     linear_issue_id: str = "",
-    human_notes: str = ""
+    human_notes: str = "",
+    historical_incident_id: str = ""
 ) -> str:
     return _save_resolved_ticket_fn(
         incident_id=incident_id,
@@ -102,6 +103,7 @@ def _save_resolved_ticket(
         risk_score=risk_score,
         linear_issue_id=linear_issue_id,
         human_notes=human_notes,
+        historical_incident_id=historical_incident_id,
     )
 
 def _search_memory(

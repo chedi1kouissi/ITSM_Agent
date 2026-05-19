@@ -2,86 +2,122 @@
   "app_id": "ecommerce-prod",
   "app_logs": [
     {
-      "timestamp": "2026-02-05T11:00:00Z",
+      "timestamp": "2026-02-05T10:00:03Z",
       "level": "INFO",
-      "service_id": "catalog-api",
+      "service_id": "payment-api",
       "message": "Request completed",
-      "metadata": { "status": 200, "latency_ms": 21 }
+      "metadata": { "status": 200, "latency_ms": 39 }
     },
     {
-      "timestamp": "2026-02-05T11:00:05Z",
-      "level": "INFO",
-      "service_id": "catalog-api",
-      "message": "Request completed",
-      "metadata": { "status": 200, "latency_ms": 31 }
-    },
-    {
-      "timestamp": "2026-02-05T11:02:10Z",
+      "timestamp": "2026-02-05T10:00:18Z",
       "level": "WARN",
-      "service_id": "catalog-api",
-      "message": "Cache size growing unexpectedly",
-      "metadata": { "size_mb": 850 }
+      "service_id": "payment-api",
+      "message": "Slow database query",
+      "metadata": { "latency_ms": 1200, "request_id": "req_101" }
     },
     {
-      "timestamp": "2026-02-05T11:03:18Z",
-      "level": "WARN",
-      "service_id": "catalog-api",
-      "message": "High memory usage detected",
-      "metadata": { "usage_mb": 1500 }
-    },
-    {
-      "timestamp": "2026-02-05T11:04:43Z",
+      "timestamp": "2026-02-05T10:04:00Z",
       "level": "ERROR",
-      "service_id": "catalog-api",
-      "message": "OutOfMemoryError: allocation failed",
+      "service_id": "payment-api",
+      "message": "Database timeout",
+      "metadata": { "request_id": "req_210", "latency_ms": 5200 }
+    },
+    {
+      "timestamp": "2026-02-05T10:04:30Z",
+      "level": "ERROR",
+      "service_id": "payment-api",
+      "message": "Unhandled exception ConnectionPoolExhausted",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-02-05T10:04:52Z",
+      "level": "ERROR",
+      "service_id": "payment-api",
+      "message": "Service unavailable returning 503",
       "metadata": {}
     }
   ],
-  "database_logs": [],
+  "database_logs": [
+    {
+      "timestamp": "2026-02-05T10:01:18Z",
+      "level": "WARN",
+      "service_id": "payment-db",
+      "message": "Slow query execution",
+      "metadata": { "execution_time_s": 3.2, "query": "SELECT * FROM payments" }
+    },
+    {
+      "timestamp": "2026-02-05T10:03:45Z",
+      "level": "WARN",
+      "service_id": "payment-db",
+      "message": "Connection usage high",
+      "metadata": { "active_connections": 145, "max_connections": 150 }
+    },
+    {
+      "timestamp": "2026-02-05T10:03:58Z",
+      "level": "ERROR",
+      "service_id": "payment-db",
+      "message": "Connection pool exhausted",
+      "metadata": { "active_connections": 150, "max_connections": 150 }
+    },
+    {
+      "timestamp": "2026-02-05T10:03:59Z",
+      "level": "ERROR",
+      "service_id": "payment-db",
+      "message": "Query timeout",
+      "metadata": { "execution_time_s": 7.8 }
+    }
+  ],
   "infrastructure_logs": [
     {
-      "timestamp": "2026-02-05T11:04:38Z",
+      "timestamp": "2026-02-05T10:04:35Z",
       "level": "WARN",
       "service_id": "k8s-prod-cluster",
-      "message": "Container memory usage critical",
-      "metadata": { "container": "catalog-api", "usage_pct": 96 }
+      "message": "Pod memory usage high",
+      "metadata": { "pod": "payment-api-7f8c9", "usage_pct": 92 }
     },
     {
-      "timestamp": "2026-02-05T11:04:42Z",
+      "timestamp": "2026-02-05T10:04:37Z",
       "level": "ERROR",
       "service_id": "k8s-prod-cluster",
-      "message": "Container terminated OOMKilled",
-      "metadata": { "container": "catalog-api", "reason": "OOMKilled" }
+      "message": "Container restarted",
+      "metadata": { "container": "payment-api", "exit_code": 137 }
     },
     {
-      "timestamp": "2026-02-05T11:04:58Z",
-      "level": "INFO",
+      "timestamp": "2026-02-05T10:04:50Z",
+      "level": "ERROR",
       "service_id": "k8s-prod-cluster",
-      "message": "Pod restarted",
-      "metadata": { "pod": "catalog-api" }
+      "message": "Liveness probe failed",
+      "metadata": { "target": "payment-api" }
     }
   ],
   "monitoring_logs": [
     {
-      "timestamp": "2026-02-05T11:02:58Z",
+      "timestamp": "2026-02-05T10:01:43Z",
       "level": "ALERT",
-      "service_id": "catalog-api",
-      "message": "HighMemory",
-      "metadata": { "usage_pct": 92 }
+      "service_id": "payment-db",
+      "message": "DatabaseLatencyHigh",
+      "metadata": { "latency_ms": 1400, "threshold_ms": 800 }
     },
     {
-      "timestamp": "2026-02-05T11:04:48Z",
+      "timestamp": "2026-02-05T10:03:55Z",
       "level": "ALERT",
-      "service_id": "catalog-api",
-      "message": "ServiceRestartDetected",
-      "metadata": {}
+      "service_id": "payment-api",
+      "message": "ErrorRateSpike",
+      "metadata": { "error_rate_pct": 32, "threshold_pct": 10 }
     },
     {
-      "timestamp": "2026-02-05T11:05:28Z",
+      "timestamp": "2026-02-05T10:04:20Z",
       "level": "ALERT",
-      "service_id": "catalog-api",
-      "message": "MemoryNormalized",
-      "metadata": { "usage_pct": 45 }
+      "service_id": "payment-api",
+      "message": "ServiceDown",
+      "metadata": { "instances": 0 }
+    },
+    {
+      "timestamp": "2026-02-05T10:07:07Z",
+      "level": "ALERT",
+      "service_id": "payment-api",
+      "message": "RecoveryDetected",
+      "metadata": { "error_rate_pct": 2 }
     }
   ]
 }
